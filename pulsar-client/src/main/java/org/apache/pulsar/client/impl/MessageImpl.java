@@ -158,6 +158,14 @@ public class MessageImpl<T> implements Message<T> {
             msgMetadataBuilder.setNullValue(singleMessageMetadata.hasNullValue());
         }
 
+        if (singleMessageMetadata.hasKvKeyNull()) {
+            msgMetadataBuilder.setKvKeyNull(singleMessageMetadata.hasKvKeyNull());
+        }
+
+        if (singleMessageMetadata.hasKvValueNull()) {
+            msgMetadataBuilder.setKvValueNull(singleMessageMetadata.hasKvValueNull());
+        }
+
         this.schema = schema;
     }
 
@@ -298,7 +306,9 @@ public class MessageImpl<T> implements Message<T> {
         KeyValueSchema kvSchema = (KeyValueSchema) schema;
         byte[] schemaVersion = getSchemaVersion();
         if (kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED) {
-            return (T) kvSchema.decode(getKeyBytes(), getData(), schemaVersion);
+            return (T) kvSchema.decode(
+                    msgMetadataBuilder.hasKvKeyNull() ? null : getKeyBytes(),
+                    msgMetadataBuilder.hasKvValueNull() ? null : getData(), schemaVersion);
         } else {
             return schema.decode(getData(), schemaVersion);
         }
@@ -307,7 +317,9 @@ public class MessageImpl<T> implements Message<T> {
     private T getKeyValue() {
         KeyValueSchema kvSchema = (KeyValueSchema) schema;
         if (kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED) {
-            return (T) kvSchema.decode(getKeyBytes(), getData(), null);
+            return (T) kvSchema.decode(
+                    msgMetadataBuilder.hasKvKeyNull() ? null : getKeyBytes(),
+                    msgMetadataBuilder.hasKvValueNull() ? null : getData(), null);
         } else {
             return schema.decode(getData());
         }

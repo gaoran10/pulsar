@@ -138,6 +138,11 @@ message MessageMetadata {
 
     // Indicate if the message payload value is set
     optional bool null_value = 25 [ default = false ];
+
+    // Indicate KeyValueSchema message key is null;
+    optional bool kv_key_null = 26 [default = false];
+    // Indicate KeyValueSchema message value is null;
+    optional bool kv_value_null = 27 [default = false];
 }
 
 message SingleMessageMetadata {
@@ -156,6 +161,10 @@ message SingleMessageMetadata {
     optional uint64 sequence_id = 8;
     // Indicate if the message payload value is set
     optional bool null_value = 9 [ default = false ];
+    // Indicate KeyValueSchema message key is null;
+    optional bool kv_key_null = 10;
+    // Indicate KeyValueSchema message value is null;
+    optional bool kv_value_null = 11;
 }
 
 enum ServerError {

@@ -111,6 +111,10 @@ public class TypedMessageBuilderImpl<T> implements TypedMessageBuilder<T> {
             KeyValueSchema kvSchema = (KeyValueSchema) schema;
             checkArgument(!(kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED),
                     "This method is not allowed to set keys when in encoding type is SEPARATED");
+            if (key == null) {
+                msgMetadataBuilder.setKvKeyNull(true);
+                return this;
+            }
         }
         msgMetadataBuilder.setPartitionKey(key);
         msgMetadataBuilder.setPartitionKeyB64Encoded(false);
@@ -123,6 +127,10 @@ public class TypedMessageBuilderImpl<T> implements TypedMessageBuilder<T> {
             KeyValueSchema kvSchema = (KeyValueSchema) schema;
             checkArgument(!(kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED),
                     "This method is not allowed to set keys when in encoding type is SEPARATED");
+            if (key == null) {
+                msgMetadataBuilder.setKvKeyNull(true);
+                return this;
+            }
         }
         msgMetadataBuilder.setPartitionKey(Base64.getEncoder().encodeToString(key));
         msgMetadataBuilder.setPartitionKeyB64Encoded(true);
@@ -144,13 +152,28 @@ public class TypedMessageBuilderImpl<T> implements TypedMessageBuilder<T> {
         if (schema.getSchemaInfo() != null && schema.getSchemaInfo().getType() == SchemaType.KEY_VALUE) {
             KeyValueSchema kvSchema = (KeyValueSchema) schema;
             org.apache.pulsar.common.schema.KeyValue kv = (org.apache.pulsar.common.schema.KeyValue) value;
+
+            if (kv.getKey() == null) {
+                this.msgMetadataBuilder.setKvKeyNull(true);
+            }
+
+            if (kv.getValue() == null) {
+                this.msgMetadataBuilder.setKvValueNull(true);
+            }
+
             if (kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED) {
+
                 // set key as the message key
-                msgMetadataBuilder.setPartitionKey(
-                        Base64.getEncoder().encodeToString(kvSchema.getKeySchema().encode(kv.getKey())));
-                msgMetadataBuilder.setPartitionKeyB64Encoded(true);
+                if (kv.getKey() != null) {
+                    msgMetadataBuilder.setPartitionKey(
+                            Base64.getEncoder().encodeToString(kvSchema.getKeySchema().encode(kv.getKey())));
+                    msgMetadataBuilder.setPartitionKeyB64Encoded(true);
+                }
+
                 // set value as the payload
-                this.content = ByteBuffer.wrap(kvSchema.getValueSchema().encode(kv.getValue()));
+                if (kv.getValue() != null) {
+                    this.content = ByteBuffer.wrap(kvSchema.getValueSchema().encode(kv.getValue()));
+                }
                 return this;
             }
         }

@@ -1646,6 +1646,14 @@ public class Commands {
             singleMessageMetadataBuilder.setNullValue(msgBuilder.hasNullValue());
         }
 
+        if (msgBuilder.hasKvKeyNull()) {
+            singleMessageMetadataBuilder.setKvKeyNull(msgBuilder.hasKvKeyNull());
+        }
+
+        if (msgBuilder.hasKvValueNull()) {
+            singleMessageMetadataBuilder.setKvValueNull(msgBuilder.hasKvValueNull());
+        }
+
         try {
             return serializeSingleMessageInBatchWithPayload(singleMessageMetadataBuilder, payload, batchBuffer);
         } finally {
