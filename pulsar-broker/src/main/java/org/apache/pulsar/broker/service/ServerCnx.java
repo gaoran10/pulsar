@@ -18,49 +18,20 @@
  */
 package org.apache.pulsar.broker.service;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.pulsar.broker.admin.impl.PersistentTopicsBase.getPartitionedTopicMetadata;
-import static org.apache.pulsar.broker.lookup.TopicLookupBase.lookupTopicAsync;
-import static org.apache.pulsar.common.protocol.Commands.newLookupErrorResponse;
-import static org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion.v5;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslHandler;
-
-import java.io.IOException;
-import java.net.SocketAddress;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.stream.Collectors;
-
-import javax.naming.AuthenticationException;
-import javax.net.ssl.SSLSession;
-
 import org.apache.bookkeeper.mledger.AsyncCallbacks;
 import org.apache.bookkeeper.mledger.Entry;
-import org.apache.bookkeeper.mledger.ManagedLedger;
 import org.apache.bookkeeper.mledger.ManagedLedgerException;
 import org.apache.bookkeeper.mledger.Position;
 import org.apache.bookkeeper.mledger.impl.ManagedLedgerImpl;
 import org.apache.bookkeeper.mledger.impl.PositionImpl;
 import org.apache.bookkeeper.mledger.util.SafeRun;
-import org.apache.bookkeeper.util.collections.ConcurrentLongLongHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.pulsar.broker.PulsarServerException;
@@ -75,14 +46,10 @@ import org.apache.pulsar.broker.service.BrokerServiceException.ServiceUnitNotRea
 import org.apache.pulsar.broker.service.BrokerServiceException.SubscriptionNotFoundException;
 import org.apache.pulsar.broker.service.BrokerServiceException.TopicNotFoundException;
 import org.apache.pulsar.broker.service.persistent.PersistentTopic;
-import org.apache.pulsar.broker.service.schema.exceptions.IncompatibleSchemaException;
 import org.apache.pulsar.broker.service.schema.SchemaRegistryService;
+import org.apache.pulsar.broker.service.schema.exceptions.IncompatibleSchemaException;
 import org.apache.pulsar.broker.transaction.buffer.TransactionBuffer;
-import org.apache.pulsar.broker.transaction.buffer.TransactionBufferProvider;
-import org.apache.pulsar.broker.transaction.buffer.exceptions.TransactionNotFoundException;
 import org.apache.pulsar.broker.transaction.buffer.exceptions.UnsupportedTxnActionException;
-import org.apache.pulsar.broker.transaction.buffer.impl.InMemTransactionBufferProvider;
-import org.apache.pulsar.broker.transaction.buffer.impl.PersistentTransactionBuffer;
 import org.apache.pulsar.broker.web.RestException;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.transaction.TxnID;
@@ -90,11 +57,6 @@ import org.apache.pulsar.client.impl.BatchMessageIdImpl;
 import org.apache.pulsar.client.impl.ClientCnx;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.api.AuthData;
-import org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
-import org.apache.pulsar.common.policies.data.TopicOperation;
-import org.apache.pulsar.common.protocol.CommandUtils;
-import org.apache.pulsar.common.protocol.Commands;
-import org.apache.pulsar.common.protocol.PulsarHandler;
 import org.apache.pulsar.common.api.proto.PulsarApi;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandAck;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthResponse;
@@ -105,10 +67,11 @@ import org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStats;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStatsResponse;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandFlow;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetLastMessageId;
-import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchema;
+import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopic;
+import org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadata;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandProducer;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandRedeliverUnacknowledgedMessages;
@@ -128,6 +91,10 @@ import org.apache.pulsar.common.naming.NamespaceName;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.policies.data.BacklogQuota;
 import org.apache.pulsar.common.policies.data.ConsumerStats;
+import org.apache.pulsar.common.policies.data.TopicOperation;
+import org.apache.pulsar.common.protocol.CommandUtils;
+import org.apache.pulsar.common.protocol.Commands;
+import org.apache.pulsar.common.protocol.PulsarHandler;
 import org.apache.pulsar.common.protocol.schema.SchemaData;
 import org.apache.pulsar.common.protocol.schema.SchemaInfoUtil;
 import org.apache.pulsar.common.protocol.schema.SchemaVersion;
@@ -139,6 +106,29 @@ import org.apache.pulsar.transaction.coordinator.TransactionCoordinatorID;
 import org.apache.pulsar.transaction.impl.common.TxnStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.naming.AuthenticationException;
+import javax.net.ssl.SSLSession;
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.pulsar.broker.admin.impl.PersistentTopicsBase.getPartitionedTopicMetadata;
+import static org.apache.pulsar.broker.lookup.TopicLookupBase.lookupTopicAsync;
+import static org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion.v5;
+import static org.apache.pulsar.common.protocol.Commands.newLookupErrorResponse;
 
 public class ServerCnx extends PulsarHandler {
     private final BrokerService service;
@@ -1228,35 +1218,15 @@ public class ServerCnx extends PulsarHandler {
 
         startSendOperation(producer, headersAndPayload.readableBytes(), send.getNumMessages());
 
-        if (send.getTxnidMostBits() > 0 && send.getTxnidLeastBits() > 0) {
+        if (send.getTxnidMostBits() >= 0 && send.getTxnidLeastBits() >= 0) {
             TxnID txnID = new TxnID(send.getTxnidMostBits(), send.getTxnidLeastBits());
-            CompletableFuture<TransactionBuffer> tbFuture = transactionBuffers.computeIfAbsent(
-                producer.getTopic().getName(), topicName -> {
-                    CompletableFuture<TransactionBuffer> transactionBufferFuture = new CompletableFuture<>();
-                    String tbName = producer.getTopic().getName() + "/_txnlog";
-                    service.getManagedLedgerFactory().asyncOpen(tbName, new AsyncCallbacks.OpenLedgerCallback() {
-                        @Override
-                        public void openLedgerComplete(ManagedLedger ledger, Object ctx) {
-                            try {
-                                transactionBufferFuture.complete(
-                                        new PersistentTransactionBuffer(tbName, ledger, service, producer));
-                            } catch (Exception e) {
-                                log.error("New PersistentTransactionBuffer error.", e);
-                                transactionBufferFuture.completeExceptionally(e);
-                            }
-                        }
 
-                        @Override
-                        public void openLedgerFailed(ManagedLedgerException exception, Object ctx) {
-                            log.error("Open transactionBuffer managedLedger failed.", exception);
-                            transactionBufferFuture.completeExceptionally(exception);
-                        }
-                    }, null);
-                    return transactionBufferFuture;
-                });
+            CompletableFuture<TransactionBuffer> tbFuture = transactionBuffers.computeIfAbsent(
+                    producer.getTopic().getName(), topicName ->
+                            service.getPulsar().getTransactionBufferProvider()
+                                    .newTransactionBuffer(producer.getTopic()));
             tbFuture.whenComplete((tb, throwable) -> {
                 if (throwable != null) {
-                    // TODO
                     log.error("Get transactionBuffer error. produceId: " + send.getProducerId(), throwable);
                     return;
                 }
@@ -1266,6 +1236,11 @@ public class ServerCnx extends PulsarHandler {
                 }
                 tb.appendBufferToTxn(txnID, send.getSequenceId(), headersAndPayload);
             });
+            try {
+                tbFuture.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             return;
         }
 
@@ -1765,6 +1740,8 @@ public class ServerCnx extends PulsarHandler {
                                     BrokerServiceException.getClientErrorCode(throwable), throwable.getMessage()));
                             return;
                         }
+                        service.pulsar().getTransactionMetadataStoreService()
+                                .updateTxnStatus(txnID, TxnStatus.COMMITTED, TxnStatus.OPEN);
                         ctx.writeAndFlush(Commands.newEndTxnResponse(command.getRequestId(),
                                 txnID.getLeastSigBits(), txnID.getMostSigBits()));
                     });
@@ -1795,11 +1772,9 @@ public class ServerCnx extends PulsarHandler {
                     if (TxnStatus.COMMITTING.equals(newStatus)) {
                         CompletableFuture<Void> commitFuture = tb.committingTxn(txnID)
                                 .thenCompose(ignored -> tb.commitPartitionTopic(txnID))
-                                .thenCompose(position -> {
-                                    return tb.commitTxn(txnID,
-                                            ((PositionImpl) position).getLedgerId(),
-                                            ((PositionImpl) position).getEntryId());
-                                });
+                                .thenCompose(position -> tb.commitTxn(txnID,
+                                        ((PositionImpl) position).getLedgerId(),
+                                        ((PositionImpl) position).getEntryId()));
                         commitFutureList.add(commitFuture);
                     } else if (TxnStatus.ABORTING.equals(newStatus)) {
                         tb.abortTxn(txnID);
