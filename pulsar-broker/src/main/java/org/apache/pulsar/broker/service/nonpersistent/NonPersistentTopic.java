@@ -61,6 +61,7 @@ import org.apache.pulsar.broker.service.Subscription;
 import org.apache.pulsar.broker.service.Topic;
 import org.apache.pulsar.broker.stats.ClusterReplicationMetrics;
 import org.apache.pulsar.broker.stats.NamespaceStats;
+import org.apache.pulsar.broker.transaction.buffer.TransactionBuffer;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.common.api.proto.PulsarApi;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandSubscribe.InitialPosition;
@@ -950,5 +951,10 @@ public class NonPersistentTopic extends AbstractTopic implements Topic {
                 return addSchema(schema).thenCompose(schemaVersion -> CompletableFuture.completedFuture(null));
             }
         });
+    }
+
+    @Override
+    public CompletableFuture<TransactionBuffer> getTransactionBuffer(boolean createIfMissing) {
+        return null;
     }
 }
