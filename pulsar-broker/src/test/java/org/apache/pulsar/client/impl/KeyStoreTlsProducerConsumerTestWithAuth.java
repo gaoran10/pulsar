@@ -226,6 +226,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
 
         // Using TLS on binary protocol - sending certs
         internalSetUpForClient(true, pulsar.getBrokerServiceUrlTls());
+        log.info("pulsarClient state: {}", ((PulsarClientImpl) pulsarClient).getState());
 
         try {
             pulsarClient.newConsumer().topic(topicName)
