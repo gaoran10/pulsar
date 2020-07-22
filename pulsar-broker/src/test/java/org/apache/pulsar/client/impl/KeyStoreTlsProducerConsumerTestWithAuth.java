@@ -111,6 +111,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
     }
 
     protected void internalSetUpForClient(boolean addCertificates, String lookupUrl) throws Exception {
+        log.info("[internalSetUpForClient] start addCertificates: {}, lookupUrl: {}", addCertificates, lookupUrl);
         if (pulsarClient != null) {
             pulsarClient.close();
         }
@@ -134,6 +135,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
             clientBuilder.authentication(AuthenticationKeyStoreTls.class.getName(), authParams);
         }
         pulsarClient = clientBuilder.build();
+        log.info("[internalSetUpForClient] finish");
     }
 
     protected void internalSetUpForNamespace() throws Exception {
@@ -224,11 +226,13 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
 
         // Using TLS on binary protocol - sending certs
         internalSetUpForClient(true, pulsar.getBrokerServiceUrlTls());
+        log.info("pulsarClient state: {}", ((PulsarClientImpl) pulsarClient).getState());
 
         try {
             pulsarClient.newConsumer().topic(topicName)
                     .subscriptionName("my-subscriber-name").subscriptionType(SubscriptionType.Exclusive).subscribe();
         } catch (Exception ex) {
+            log.error("Should not fail since certs are sent.", ex);
             Assert.fail("Should not fail since certs are sent.");
         }
     }

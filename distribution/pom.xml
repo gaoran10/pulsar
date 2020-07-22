@@ -33,29 +33,11 @@
   <packaging>pom</packaging>
   <name>Pulsar :: Distribution</name>
 
-  <profiles>
-
-    <profile>
-      <id>main</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <modules>
-        <module>server</module>
-        <module>io</module>
-        <module>offloaders</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>core-modules</id>
-      <modules>
-        <module>server</module>
-      </modules>
-    </profile>
-
-  </profiles>
-
+  <modules>
+    <module>server</module>
+    <module>io</module>
+    <module>offloaders</module>
+  </modules>
   <build>
     <plugins>
       <plugin>
