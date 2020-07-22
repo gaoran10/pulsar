@@ -22,8 +22,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.pulsar.broker.admin.impl.PersistentTopicsBase.getPartitionedTopicMetadata;
 import static org.apache.pulsar.broker.lookup.TopicLookupBase.lookupTopicAsync;
-import static org.apache.pulsar.common.protocol.Commands.newLookupErrorResponse;
 import static org.apache.pulsar.common.api.proto.PulsarApi.ProtocolVersion.v5;
+import static org.apache.pulsar.common.protocol.Commands.newLookupErrorResponse;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -35,11 +35,13 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslHandler;
 
 import java.net.SocketAddress;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -69,8 +71,10 @@ import org.apache.pulsar.broker.service.BrokerServiceException.ServiceUnitNotRea
 import org.apache.pulsar.broker.service.BrokerServiceException.SubscriptionNotFoundException;
 import org.apache.pulsar.broker.service.BrokerServiceException.TopicNotFoundException;
 import org.apache.pulsar.broker.service.persistent.PersistentTopic;
-import org.apache.pulsar.broker.service.schema.exceptions.IncompatibleSchemaException;
 import org.apache.pulsar.broker.service.schema.SchemaRegistryService;
+import org.apache.pulsar.broker.service.schema.exceptions.IncompatibleSchemaException;
+import org.apache.pulsar.broker.transaction.buffer.TransactionBuffer;
+import org.apache.pulsar.broker.transaction.buffer.exceptions.UnsupportedTxnActionException;
 import org.apache.pulsar.broker.web.RestException;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.transaction.TxnID;
@@ -78,11 +82,6 @@ import org.apache.pulsar.client.impl.BatchMessageIdImpl;
 import org.apache.pulsar.client.impl.ClientCnx;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.api.AuthData;
-import org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
-import org.apache.pulsar.common.policies.data.TopicOperation;
-import org.apache.pulsar.common.protocol.CommandUtils;
-import org.apache.pulsar.common.protocol.Commands;
-import org.apache.pulsar.common.protocol.PulsarHandler;
 import org.apache.pulsar.common.api.proto.PulsarApi;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandAck;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandAuthResponse;
@@ -93,10 +92,11 @@ import org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStats;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandConsumerStatsResponse;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandFlow;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetLastMessageId;
-import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetOrCreateSchema;
+import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetSchema;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandGetTopicsOfNamespace;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandLookupTopic;
+import org.apache.pulsar.common.api.proto.PulsarApi.CommandNewTxn;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandPartitionedTopicMetadata;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandProducer;
 import org.apache.pulsar.common.api.proto.PulsarApi.CommandRedeliverUnacknowledgedMessages;
@@ -116,6 +116,10 @@ import org.apache.pulsar.common.naming.NamespaceName;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.policies.data.BacklogQuota;
 import org.apache.pulsar.common.policies.data.ConsumerStats;
+import org.apache.pulsar.common.policies.data.TopicOperation;
+import org.apache.pulsar.common.protocol.CommandUtils;
+import org.apache.pulsar.common.protocol.Commands;
+import org.apache.pulsar.common.protocol.PulsarHandler;
 import org.apache.pulsar.common.protocol.schema.SchemaData;
 import org.apache.pulsar.common.protocol.schema.SchemaInfoUtil;
 import org.apache.pulsar.common.protocol.schema.SchemaVersion;
@@ -172,6 +176,8 @@ public class ServerCnx extends PulsarHandler {
             AtomicLongFieldUpdater.newUpdater(ServerCnx.class, "messagePublishBufferSize");
     private volatile long messagePublishBufferSize = 0;
 
+    private final ConcurrentHashMap<String, CompletableFuture<TransactionBuffer>> transactionBuffers;
+
     enum State {
         Start, Connected, Failed, Connecting
     }
@@ -196,6 +202,8 @@ public class ServerCnx extends PulsarHandler {
         this.resumeReadsThreshold = maxPendingSendRequests / 2;
         this.preciseDispatcherFlowControl = pulsar.getConfiguration().isPreciseDispatcherFlowControl();
         this.preciseTopicPublishRateLimitingEnable = pulsar.getConfiguration().isPreciseTopicPublishRateLimiterEnable();
+
+        this.transactionBuffers = new ConcurrentHashMap<>(8, 1);
     }
 
     @Override
@@ -650,6 +658,7 @@ public class ServerCnx extends PulsarHandler {
 
             // init authState and other var
             ChannelHandler sslHandler = ctx.channel().pipeline().get(PulsarChannelInitializer.TLS_HANDLER);
+            log.info("init sslHandler finish. sslHandler: {}", sslHandler.getClass().getName());
             SSLSession sslSession = null;
             if (sslHandler != null) {
                 sslSession = ((SslHandler) sslHandler).engine().getSession();
@@ -1212,6 +1221,33 @@ public class ServerCnx extends PulsarHandler {
 
         startSendOperation(producer, headersAndPayload.readableBytes(), send.getNumMessages());
 
+        final long produceId = producer.getProducerId();
+        final long sequenceId = send.getSequenceId();
+        final long highSequenceId = send.getHighestSequenceId();
+
+        if (send.hasTxnidMostBits() && send.hasTxnidLeastBits()) {
+            TxnID txnID = new TxnID(send.getTxnidMostBits(), send.getTxnidLeastBits());
+
+            producer.getTopic()
+                    .getTransactionBuffer(true)
+                    .thenCompose(txnBuffer -> txnBuffer.appendBufferToTxn(txnID, send.getSequenceId(), headersAndPayload))
+                    .thenAccept(position -> {
+                        ctx.writeAndFlush(
+                                Commands.newSendReceipt(
+                                        produceId,
+                                        sequenceId,
+                                        highSequenceId,
+                                        ((PositionImpl) position).getLedgerId(),
+                                        ((PositionImpl) position).getEntryId()));
+                    })
+                    .exceptionally(throwable -> {
+                        ctx.writeAndFlush(Commands.newSendError(producer.getProducerId(),
+                                send.getSequenceId(), ServerError.UnknownError, throwable.getMessage()));
+                        return null;
+                    });
+            return;
+        }
+
         // Persist the message
         if (send.hasHighestSequenceId() && send.getSequenceId() <= send.getHighestSequenceId()) {
             producer.publishMessage(send.getProducerId(), send.getSequenceId(), send.getHighestSequenceId(),
@@ -1650,7 +1686,7 @@ public class ServerCnx extends PulsarHandler {
 
     @Override
     protected void handleAddPartitionToTxn(PulsarApi.CommandAddPartitionToTxn command) {
-        TxnID txnID = new TxnID(command.getTxnidMostBits(), command.getTxnidLeastBits());
+            TxnID txnID = new TxnID(command.getTxnidMostBits(), command.getTxnidLeastBits());
         if (log.isDebugEnabled()) {
             log.debug("Receive add published partition to txn request {} from {} with txnId {}", command.getRequestId(), remoteAddress, txnID);
         }
@@ -1662,6 +1698,7 @@ public class ServerCnx extends PulsarHandler {
                     }
                     ctx.writeAndFlush(Commands.newAddPartitionToTxnResponse(command.getRequestId(),
                             txnID.getLeastSigBits(), txnID.getMostSigBits()));
+                    log.info("handle add partition to txn finish.");
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("Send response error for add published partition to txn request {}",  command.getRequestId(), ex);
@@ -1674,7 +1711,8 @@ public class ServerCnx extends PulsarHandler {
 
     @Override
     protected void handleEndTxn(PulsarApi.CommandEndTxn command) {
-        TxnStatus newStatus = null;
+        TxnID txnID = new TxnID(command.getTxnidMostBits(), command.getTxnidLeastBits());
+        final TxnStatus newStatus;
         switch (command.getTxnAction()) {
             case COMMIT:
                 newStatus = TxnStatus.COMMITTING;
@@ -1682,27 +1720,89 @@ public class ServerCnx extends PulsarHandler {
             case ABORT:
                 newStatus = TxnStatus.ABORTING;
                 break;
+            default:
+                UnsupportedTxnActionException exception =
+                        new UnsupportedTxnActionException(txnID, command.getTxnAction());
+                log.error(exception.getMessage());
+                ctx.writeAndFlush(Commands.newEndTxnResponse(command.getRequestId(), txnID.getMostSigBits(),
+                        BrokerServiceException.getClientErrorCode(exception), exception.getMessage()));
+                return;
         }
-        TxnID txnID = new TxnID(command.getTxnidMostBits(), command.getTxnidLeastBits());
         if (log.isDebugEnabled()) {
             log.debug("Receive end txn by {} request {} from {} with txnId {}", newStatus, command.getRequestId(), remoteAddress, txnID);
         }
+        final long requestId = command.getRequestId();
         service.pulsar().getTransactionMetadataStoreService().updateTxnStatus(txnID, newStatus, TxnStatus.OPEN)
-            .whenComplete((v, ex) -> {
-                if (ex == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Send response success for end txn request {}", command.getRequestId());
-                    }
-                    ctx.writeAndFlush(Commands.newEndTxnResponse(command.getRequestId(),
-                            txnID.getLeastSigBits(), txnID.getMostSigBits()));
-                } else {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Send response error for end txn request {}", command.getRequestId());
-                    }
-                    ctx.writeAndFlush(Commands.newEndTxnResponse(command.getRequestId(), txnID.getMostSigBits(),
-                            BrokerServiceException.getClientErrorCode(ex), ex.getMessage()));
+            .thenRun(() -> {
+                if (log.isDebugEnabled()) {
+                    log.debug("Send response success for end txn request {}", command.getRequestId());
                 }
+                updateTBStatus(txnID, newStatus).thenRun(() -> {
+                    service.pulsar().getTransactionMetadataStoreService()
+                            .updateTxnStatus(txnID, TxnStatus.COMMITTED, TxnStatus.COMMITTING);
+                    ctx.writeAndFlush(Commands.newEndTxnResponse(requestId,
+                            txnID.getLeastSigBits(), txnID.getMostSigBits()));
+                }).exceptionally(throwable -> {
+                    log.error("Failed to get txn `" + txnID + "` txnMeta.", throwable);
+                    ctx.writeAndFlush(Commands.newEndTxnResponse(requestId, txnID.getMostSigBits(),
+                            BrokerServiceException.getClientErrorCode(throwable), throwable.getMessage()));
+                    return null;
+                });
+            }).exceptionally(throwable -> {
+                if (log.isDebugEnabled()) {
+                    log.debug("Send response error for end txn request {}", command.getRequestId());
+                }
+                ctx.writeAndFlush(Commands.newEndTxnResponse(command.getRequestId(), txnID.getMostSigBits(),
+                        BrokerServiceException.getClientErrorCode(throwable), throwable.getMessage()));
+                return null;
+        });
+    }
+
+    private CompletableFuture<Void> updateTBStatus(TxnID txnID, TxnStatus newStatus) {
+        CompletableFuture<Void> resultFuture = new CompletableFuture<>();
+        List<CompletableFuture<Void>> commitFutureList = new ArrayList<>();
+        service.pulsar().getTransactionMetadataStoreService().getTxnMeta(txnID).whenComplete((txnMeta, throwable) -> {
+            if (throwable != null) {
+                resultFuture.completeExceptionally(throwable);
+                return;
+            }
+            txnMeta.producedPartitions().forEach(partition -> {
+                service.getTopics().get(partition).whenComplete((topic, t) -> {
+                    if (!topic.isPresent()) {
+                        resultFuture.completeExceptionally(
+                                new TopicNotFoundException("Topic " + partition + " is not found."));
+                        return;
+                    }
+                    topic.get().getTransactionBuffer(false).thenAccept(tb -> {
+                        if (TxnStatus.COMMITTING.equals(newStatus)) {
+                            CompletableFuture<Void> commitFuture = tb.committingTxn(txnID)
+                                    .thenCompose(ignored -> tb.commitPartitionTopic(txnID))
+                                    .thenCompose(position -> tb.commitTxn(txnID,
+                                            ((PositionImpl) position).getLedgerId(),
+                                            ((PositionImpl) position).getEntryId()));
+                            commitFutureList.add(commitFuture);
+                        } else if (TxnStatus.ABORTING.equals(newStatus)) {
+                            tb.abortTxn(txnID);
+                        }
+                    }).exceptionally(tbThrowable -> {
+                        resultFuture.completeExceptionally(tbThrowable);
+                        return null;
+                    });
+                });
             });
+        });
+        try {
+            FutureUtil.waitForAll(commitFutureList).whenComplete((ignored, throwable) -> {
+                if (throwable != null) {
+                    resultFuture.completeExceptionally(throwable);
+                    return;
+                }
+                resultFuture.complete(null);
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return resultFuture;
     }
 
     private CompletableFuture<SchemaVersion> tryAddSchema(Topic topic, SchemaData schema) {
@@ -1722,6 +1822,38 @@ public class ServerCnx extends PulsarHandler {
                 return result;
             });
         }
+    }
+
+    @Override
+    protected void handleAddSubscriptionToTxn(PulsarApi.CommandAddSubscriptionToTxn command) {
+        TxnID txnID = new TxnID(command.getTxnidMostBits(), command.getTxnidLeastBits());
+        if (log.isDebugEnabled()) {
+            log.debug("Receive add published partition to txn request {} from {} with txnId {}",
+                    command.getRequestId(), remoteAddress, txnID);
+        }
+        List<String> subscriptionList = command.getSubscriptionList().stream()
+                .map(subscription -> subscription.getTopic() + "|" + subscription.getSubscription())
+                .collect(Collectors.toList());
+        service.pulsar().getTransactionMetadataStoreService().addAckedPartitionToTxn(txnID, subscriptionList)
+                .whenComplete(((v, ex) -> {
+                    if (ex == null) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Send response success for add published partition to txn request {}",
+                                    command.getRequestId());
+                        }
+                        ctx.writeAndFlush(Commands.newEndTxnOnSubscriptionResponse(command.getRequestId(),
+                                txnID.getLeastSigBits(), txnID.getMostSigBits()));
+                        log.info("handle add partition to txn finish.");
+                    } else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Send response error for add published partition to txn request {}",
+                                    command.getRequestId(), ex);
+                        }
+                        ctx.writeAndFlush(Commands.newAddPartitionToTxnResponse(command.getRequestId(),
+                                txnID.getMostSigBits(), BrokerServiceException.getClientErrorCode(ex),
+                                ex.getMessage()));
+                    }
+                }));
     }
 
     @Override

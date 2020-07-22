@@ -102,7 +102,7 @@ class InMemTransactionBuffer implements TransactionBuffer {
         }
 
         @Override
-        public CompletableFuture<Void> appendEntry(long sequenceId, Position position) {
+        public CompletableFuture<Position> appendEntry(long sequenceId, Position position) {
             return FutureUtil.failedFuture(new UnsupportedOperationException());
         }
 
@@ -238,7 +238,7 @@ class InMemTransactionBuffer implements TransactionBuffer {
     }
 
     @Override
-    public CompletableFuture<Void> appendBufferToTxn(TxnID txnId,
+    public CompletableFuture<Position> appendBufferToTxn(TxnID txnId,
                                                      long sequenceId,
                                                      ByteBuf buffer) {
         TxnBuffer txnBuffer = getTxnBufferOrCreateIfNotExist(txnId);
@@ -265,6 +265,16 @@ class InMemTransactionBuffer implements TransactionBuffer {
             openFuture.completeExceptionally(e);
         }
         return openFuture;
+    }
+
+    @Override
+    public CompletableFuture<Void> committingTxn(TxnID txnID) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Position> commitPartitionTopic(TxnID txnID) {
+        return null;
     }
 
     @Override

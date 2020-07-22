@@ -85,6 +85,7 @@ public abstract class PulsarDecoder extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        log.info("[channelRead]");
         // Get a buffer that contains the full frame
         ByteBuf buffer = (ByteBuf) msg;
         BaseCommand cmd = null;

@@ -82,6 +82,7 @@ public final class PulsarApi {
     ConsumerAssignError(19, 19),
     TransactionCoordinatorNotFound(20, 20),
     InvalidTxnStatus(21, 21),
+    NotAllowedError(22, 22),
     ;
     
     public static final int UnknownError_VALUE = 0;
@@ -106,6 +107,7 @@ public final class PulsarApi {
     public static final int ConsumerAssignError_VALUE = 19;
     public static final int TransactionCoordinatorNotFound_VALUE = 20;
     public static final int InvalidTxnStatus_VALUE = 21;
+    public static final int NotAllowedError_VALUE = 22;
     
     
     public final int getNumber() { return value; }
@@ -134,6 +136,7 @@ public final class PulsarApi {
         case 19: return ConsumerAssignError;
         case 20: return TransactionCoordinatorNotFound;
         case 21: return InvalidTxnStatus;
+        case 22: return NotAllowedError;
         default: return null;
       }
     }
@@ -1573,15 +1576,6 @@ public final class PulsarApi {
             case 40: {
               ensureAckSetIsMutable();
               ackSet_.add(input.readInt64());
-              break;
-            }
-            case 42: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addAckSet(input.readInt64());
-              }
-              input.popLimit(limit);
               break;
             }
           }
@@ -3696,11 +3690,11 @@ public final class PulsarApi {
     boolean hasMarkerType();
     int getMarkerType();
     
-    // optional uint64 txnid_least_bits = 22 [default = 0];
+    // optional uint64 txnid_least_bits = 22;
     boolean hasTxnidLeastBits();
     long getTxnidLeastBits();
     
-    // optional uint64 txnid_most_bits = 23 [default = 0];
+    // optional uint64 txnid_most_bits = 23;
     boolean hasTxnidMostBits();
     long getTxnidMostBits();
     
@@ -4071,7 +4065,7 @@ public final class PulsarApi {
       return markerType_;
     }
     
-    // optional uint64 txnid_least_bits = 22 [default = 0];
+    // optional uint64 txnid_least_bits = 22;
     public static final int TXNID_LEAST_BITS_FIELD_NUMBER = 22;
     private long txnidLeastBits_;
     public boolean hasTxnidLeastBits() {
@@ -4081,7 +4075,7 @@ public final class PulsarApi {
       return txnidLeastBits_;
     }
     
-    // optional uint64 txnid_most_bits = 23 [default = 0];
+    // optional uint64 txnid_most_bits = 23;
     public static final int TXNID_MOST_BITS_FIELD_NUMBER = 23;
     private long txnidMostBits_;
     public boolean hasTxnidMostBits() {
@@ -5739,7 +5733,7 @@ public final class PulsarApi {
         return this;
       }
       
-      // optional uint64 txnid_least_bits = 22 [default = 0];
+      // optional uint64 txnid_least_bits = 22;
       private long txnidLeastBits_ ;
       public boolean hasTxnidLeastBits() {
         return ((bitField0_ & 0x00080000) == 0x00080000);
@@ -5760,7 +5754,7 @@ public final class PulsarApi {
         return this;
       }
       
-      // optional uint64 txnid_most_bits = 23 [default = 0];
+      // optional uint64 txnid_most_bits = 23;
       private long txnidMostBits_ ;
       public boolean hasTxnidMostBits() {
         return ((bitField0_ & 0x00100000) == 0x00100000);
@@ -18864,15 +18858,6 @@ public final class PulsarApi {
             case 32: {
               ensureAckSetIsMutable();
               ackSet_.add(input.readInt64());
-              break;
-            }
-            case 34: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addAckSet(input.readInt64());
-              }
-              input.popLimit(limit);
               break;
             }
           }

@@ -111,6 +111,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
     }
 
     protected void internalSetUpForClient(boolean addCertificates, String lookupUrl) throws Exception {
+        log.info("[internalSetUpForClient] start addCertificates: {}, lookupUrl: {}", addCertificates, lookupUrl);
         if (pulsarClient != null) {
             pulsarClient.close();
         }
@@ -119,7 +120,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
         tlsProtocols.add("TLSv1.2");
 
         ClientBuilder clientBuilder = PulsarClient.builder().serviceUrl(lookupUrl)
-                .enableTls(true)
+//                .enableTls(true)
                 .useKeyStoreTls(true)
                 .tlsTrustStorePath(BROKER_TRUSTSTORE_FILE_PATH)
                 .tlsTrustStorePassword(BROKER_TRUSTSTORE_PW)
@@ -128,12 +129,13 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
                 .operationTimeout(1000, TimeUnit.MILLISECONDS);
         if (addCertificates) {
             Map<String, String> authParams = new HashMap<>();
-            authParams.put(AuthenticationKeyStoreTls.KEYSTORE_TYPE, KEYSTORE_TYPE);
+//            authParams.put(AuthenticationKeyStoreTls.KEYSTORE_TYPE, KEYSTORE_TYPE);
             authParams.put(AuthenticationKeyStoreTls.KEYSTORE_PATH, CLIENT_KEYSTORE_FILE_PATH);
             authParams.put(AuthenticationKeyStoreTls.KEYSTORE_PW, CLIENT_KEYSTORE_PW);
             clientBuilder.authentication(AuthenticationKeyStoreTls.class.getName(), authParams);
         }
         pulsarClient = clientBuilder.build();
+        log.info("[internalSetUpForClient] finish pulsar client state: {}", ((PulsarClientImpl) pulsarClient).getState());
     }
 
     protected void internalSetUpForNamespace() throws Exception {
@@ -229,6 +231,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
             pulsarClient.newConsumer().topic(topicName)
                     .subscriptionName("my-subscriber-name").subscriptionType(SubscriptionType.Exclusive).subscribe();
         } catch (Exception ex) {
+            log.error("Should not fail since certs are sent.", ex);
             Assert.fail("Should not fail since certs are sent.");
         }
     }
