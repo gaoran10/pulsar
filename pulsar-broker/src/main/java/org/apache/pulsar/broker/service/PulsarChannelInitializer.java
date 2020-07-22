@@ -67,10 +67,15 @@ public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> 
      */
     public PulsarChannelInitializer(PulsarService pulsar, boolean enableTLS) throws Exception {
         super();
+        log.info("[PulsarChannelInitializer] enableTLS: {}", enableTLS);
         this.pulsar = pulsar;
         this.enableTls = enableTLS;
         ServiceConfiguration serviceConfig = pulsar.getConfiguration();
+
         this.tlsEnabledWithKeyStore = serviceConfig.isTlsEnabledWithKeyStore();
+        log.info("[PulsarChannelInitializer] enableTLS: {}, tlsEnabledWithKeyStore: {}",
+                this.enableTls, tlsEnabledWithKeyStore);
+
         if (this.enableTls) {
             if (tlsEnabledWithKeyStore) {
                 nettySSLContextAutoRefreshBuilder = new NettySSLContextAutoRefreshBuilder(
@@ -106,10 +111,13 @@ public class PulsarChannelInitializer extends ChannelInitializer<SocketChannel> 
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
+        log.info("[initChannel]");
         if (this.enableTls) {
+            SslHandler sslHandler = new SslHandler(nettySSLContextAutoRefreshBuilder.get().createSSLEngine());
+            log.info("[initChannel] sslHandler: {}", sslHandler.getClass().getName());
             if (this.tlsEnabledWithKeyStore) {
                 ch.pipeline().addLast(TLS_HANDLER,
-                        new SslHandler(nettySSLContextAutoRefreshBuilder.get().createSSLEngine()));
+                        sslHandler);
             } else {
                 ch.pipeline().addLast(TLS_HANDLER, sslCtxRefresher.get().newHandler(ch.alloc()));
             }

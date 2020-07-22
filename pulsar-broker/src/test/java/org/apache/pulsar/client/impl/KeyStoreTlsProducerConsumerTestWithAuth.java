@@ -117,7 +117,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
         }
 
         Set<String> tlsProtocols = Sets.newConcurrentHashSet();
-        tlsProtocols.add("TLSv1.3");
+        tlsProtocols.add("TLSv1.2");
 
         ClientBuilder clientBuilder = PulsarClient.builder().serviceUrl(lookupUrl)
                 .enableTls(true)
@@ -135,7 +135,7 @@ public class KeyStoreTlsProducerConsumerTestWithAuth extends ProducerConsumerBas
             clientBuilder.authentication(AuthenticationKeyStoreTls.class.getName(), authParams);
         }
         pulsarClient = clientBuilder.build();
-        log.info("[internalSetUpForClient] finish");
+        log.info("[internalSetUpForClient] finish pulsar client state: {}", ((PulsarClientImpl) pulsarClient).getState());
     }
 
     protected void internalSetUpForNamespace() throws Exception {

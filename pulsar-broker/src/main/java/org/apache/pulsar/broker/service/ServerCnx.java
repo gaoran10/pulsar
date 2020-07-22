@@ -658,6 +658,7 @@ public class ServerCnx extends PulsarHandler {
 
             // init authState and other var
             ChannelHandler sslHandler = ctx.channel().pipeline().get(PulsarChannelInitializer.TLS_HANDLER);
+            log.info("init sslHandler finish. sslHandler: {}", sslHandler.getClass().getName());
             SSLSession sslSession = null;
             if (sslHandler != null) {
                 sslSession = ((SslHandler) sslHandler).engine().getSession();
