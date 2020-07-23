@@ -83,10 +83,6 @@ jobs:
         if: steps.docs.outputs.changed_only == 'no'
         run: mvn test -e -DfailIfNoTests=false '-Dtest=KeyStoreTlsProducerConsumerTestWithAuth,KeyStoreTlsProducerConsumerTestWithoutAuth' -pl pulsar-broker
 
-      - name: run unit tests pulsar broker client tests
-        if: steps.docs.outputs.changed_only == 'no'
-        run: mvn test -DfailIfNoTests=false '-Dtest=org/apache/pulsar/client/**/*.java,!UnAcknowledgedMessagesTimeoutTest,!SimpleSchemaTest,!ConsumerDedupPermitsUpdate,!ConsumerBatchReceiveTest,!KeySharedSubscriptionTest,!KeyStoreTlsProducerConsumerTestWithAuth,!KeyStoreTlsProducerConsumerTestWithoutAuth' -pl pulsar-broker
-
       - name: package surefire artifacts
         if: failure()
         run: |
