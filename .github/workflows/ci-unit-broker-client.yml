@@ -75,6 +75,7 @@ jobs:
           sudo rm -rf ~/.m2/repository
           docker rmi $(docker images -q) -f
           df -h
+          java -version
 
       - name: run unit tests install by skip tests
         if: steps.docs.outputs.changed_only == 'no'
