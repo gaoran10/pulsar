@@ -31,8 +31,8 @@ jobs:
   cpp-tests:
     name:
     runs-on: ubuntu-latest
-#    container:
-#      image: apachepulsar/pulsar-build:latest
+    container:
+      image: apachepulsar/pulsar-build:latest
     timeout-minutes: 120
 
     steps:
@@ -47,6 +47,7 @@ jobs:
 
       - name: build cpp artifacts
         run: |
+          echo $PATH
           docker -v
           echo "Build C++ client library"
           export CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DBUILD_DYNAMIC_LIB=OFF"
