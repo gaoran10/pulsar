@@ -347,6 +347,7 @@ public class PulsarCluster {
             }
         }
         log.info("Starting Presto Worker");
+        prestoWorkerContainer.tailContainerLog();
         prestoWorkerContainer.start();
     }
 
