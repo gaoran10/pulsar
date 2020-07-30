@@ -20,8 +20,7 @@
 
 bin/set_python_version.sh
 
-bin/apply-config-from-env.py conf/presto/catalog/pulsar.properties && \
-    bin/apply-config-from-env.py conf/pulsar_env.sh
+bin/apply-config-from-env.py conf/presto/catalog/pulsar.properties
 
 if [ -z "$NO_AUTOSTART" ]; then
     sed -i 's/autostart=.*/autostart=true/' /etc/supervisord/conf.d/presto_worker.conf
