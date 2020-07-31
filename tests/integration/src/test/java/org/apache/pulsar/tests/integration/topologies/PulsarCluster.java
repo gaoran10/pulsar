@@ -342,6 +342,8 @@ public class PulsarCluster {
                     .withEnv("pulsar.zookeeper-uri", ZKContainer.NAME + ":" + ZKContainer.ZK_PORT)
                     .withEnv("pulsar.broker-service-url", "http://pulsar-broker-0:8080");
             if (offloadDriver != null && offloadProperties != null) {
+                log.info("[startPrestoWorker] offloadDriver: {}, offloadProperties: {}",
+                        offloadDriver, offloadProperties);
                 prestoWorkerContainer.withEnv("SQL_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
                 prestoWorkerContainer.withEnv("SQL_PREFIX_pulsar.offloader-properties", offloadProperties);
                 // used in s3 tests

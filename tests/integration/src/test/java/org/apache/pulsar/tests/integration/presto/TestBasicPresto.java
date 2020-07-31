@@ -50,7 +50,6 @@ public class TestBasicPresto extends PulsarTestSuite {
 
     @BeforeClass
     public void setupPresto() throws Exception {
-        pulsarCluster.stopPrestoWorker();
         pulsarCluster.startPrestoWorker();
     }
 
