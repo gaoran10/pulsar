@@ -342,11 +342,11 @@ public class PulsarCluster {
                     .withEnv("pulsar.zookeeper-uri", ZKContainer.NAME + ":" + ZKContainer.ZK_PORT)
                     .withEnv("pulsar.broker-service-url", "http://pulsar-broker-0:8080");
             if (offloadDriver != null && offloadProperties != null) {
-                prestoWorkerContainer.withEnv("PULSAR_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
-                prestoWorkerContainer.withEnv("PULSAR_PREFIX_pulsar.offloader-properties", offloadProperties);
+                prestoWorkerContainer.withEnv("SQL_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
+                prestoWorkerContainer.withEnv("SQL_PREFIX_pulsar.offloader-properties", offloadProperties);
                 // used in s3 tests
-                prestoWorkerContainer.withEnv("AWS_ACCESS_KEY_ID", "accesskey");
-                prestoWorkerContainer.withEnv("AWS_SECRET_KEY", "secretkey");
+                prestoWorkerContainer.withEnv("ENV_PREFIX_AWS_ACCESS_KEY_ID", "accesskey");
+                prestoWorkerContainer.withEnv("ENV_PREFIX_AWS_AWS_SECRET_KEY", "secretkey");
             }
         }
         log.info("Starting Presto Worker");
