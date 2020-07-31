@@ -47,6 +47,7 @@ import org.apache.pulsar.tests.integration.containers.PulsarContainer;
 import org.apache.pulsar.tests.integration.containers.WorkerContainer;
 import org.apache.pulsar.tests.integration.containers.ZKContainer;
 import org.apache.pulsar.tests.integration.docker.ContainerExecResult;
+import org.apache.pulsar.tests.integration.utils.DockerUtils;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -352,8 +353,11 @@ public class PulsarCluster {
             }
         }
         log.info("Starting Presto Worker");
-        prestoWorkerContainer.tailContainerLog();
         prestoWorkerContainer.start();
+
+        prestoWorkerContainer.tailContainerLog();
+        DockerUtils.runCommandAsync(prestoWorkerContainer.getDockerClient(), prestoWorkerContainer.getContainerId(),
+                "tail", "-f", "/var/log/pulsar/presto_worker.log");
     }
 
     public void stopPrestoWorker() {
