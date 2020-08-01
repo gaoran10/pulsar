@@ -34,7 +34,7 @@ if len(sys.argv) < 3:
 PF_ENV_PREFIX = sys.argv[1]
 
 # Always apply env config to env scripts as well
-conf_files = sys.argv[2]
+conf_files = sys.argv[2:]
 
 for conf_filename in conf_files:
     lines = []  # List of config file lines
