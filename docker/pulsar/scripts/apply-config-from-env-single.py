@@ -27,16 +27,23 @@
 
 import os, sys
 
+print('apply-config-from-evn-single start ...')
+
 if len(sys.argv) < 3:
     print('Usage: %s' % (sys.argv[0]))
     sys.exit(1)
 
 PF_ENV_PREFIX = sys.argv[1]
 
+print('PF_ENV_PREFIX: ' + PF_ENV_PREFIX)
+
 # Always apply env config to env scripts as well
 conf_files = sys.argv[2:]
 
+print('confFiles: ' + conf_files)
+
 for conf_filename in conf_files:
+    print('conf_filename: ' + conf_filename)
     lines = []  # List of config file lines
     keys = {} # Map a key to its line number in the file
 
