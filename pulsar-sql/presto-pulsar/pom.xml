@@ -67,6 +67,12 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>managed-ledger</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>javax.ws.rs-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -120,8 +126,8 @@
                                     <include>org.apache.pulsar:pulsar-metadata</include>
 
                                     <include>org.glassfish.jersey*:*</include>
-                                    <include>javax.ws.rs:*</include>
-                                    <include>javax.annotation:*</include>
+<!--                                    <include>javax.ws.rs:*</include>-->
+                                    <include>jakarta.annotation:*</include>
                                     <include>org.glassfish.hk2*:*</include>
 
                                     <include>org.eclipse.jetty:*</include>
