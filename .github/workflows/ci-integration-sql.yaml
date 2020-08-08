@@ -68,20 +68,22 @@ jobs:
           sudo apt clean
           docker rmi $(docker images -q) -f
           df -h
+          java -version
+          mvn -v
 
       - name: run install by skip tests
         if: steps.docs.outputs.changed_only == 'no'
         run: mvn -q -B -ntp clean install -DskipTests
 
 #      Flaky Test: https://github.com/apache/pulsar/issues/7750
-#      - name: build pulsar image
-#        if: steps.docs.outputs.changed_only == 'no'
-#        run: mvn -B -f docker/pulsar/pom.xml install -am -Pdocker -DskipTests -Ddocker.nocache=true
-#
-#      - name: build pulsar-all image
-#        if: steps.docs.outputs.changed_only == 'no'
-#        run: mvn -B -f docker/pulsar-all/pom.xml install -am -Pdocker -DskipTests -Ddocker.nocache=true
-#
+      - name: build pulsar image
+        if: steps.docs.outputs.changed_only == 'no'
+        run: mvn -B -f docker/pulsar/pom.xml install -am -Pdocker -DskipTests -Ddocker.nocache=true
+
+      - name: build pulsar-all image
+        if: steps.docs.outputs.changed_only == 'no'
+        run: mvn -B -f docker/pulsar-all/pom.xml install -am -Pdocker -DskipTests -Ddocker.nocache=true
+
       - name: build artifacts and docker pulsar latest test image
         if: steps.docs.outputs.changed_only == 'no'
         run: mvn -B -f tests/docker-images/pom.xml install -am -Pdocker -DskipTests
