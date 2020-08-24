@@ -68,6 +68,8 @@ jobs:
           sudo apt clean
           docker rmi $(docker images -q) -f
           df -h
+          java -version
+          mvn -v
 
       - name: run install by skip tests
         if: steps.docs.outputs.changed_only == 'no'
