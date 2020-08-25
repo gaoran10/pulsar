@@ -50,6 +50,7 @@ public class PulsarConnectorFactory implements ConnectorFactory {
 
     @Override
     public Connector create(String connectorId, Map<String, String> config, ConnectorContext context) {
+        log.info("[create] config: {}, classLoader: {}", config, this.getClass().getClassLoader());
         requireNonNull(config, "requiredConfig is null");
         if (log.isDebugEnabled()) {
             log.debug("Creating Pulsar connector with configs: %s", config);
@@ -68,7 +69,7 @@ public class PulsarConnectorFactory implements ConnectorFactory {
                     .initialize();
 
             PulsarConnector connector = injector.getInstance(PulsarConnector.class);
-            connector.initConnectorCache();
+//            connector.initConnectorCache();
             return connector;
         } catch (Exception e) {
             throwIfUnchecked(e);
