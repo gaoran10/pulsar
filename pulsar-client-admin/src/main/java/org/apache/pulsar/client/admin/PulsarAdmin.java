@@ -171,6 +171,8 @@ public class PulsarAdmin implements Closeable {
         httpConfig.register(MultiPartFeature.class);
         httpConfig.connectorProvider(asyncConnectorProvider);
 
+        LOG.info("PulsarAdmin classLoader: {}", this.getClass().getClassLoader());
+        LOG.info("ClientBuilder classLoader: {}", ClientBuilder.class.getClassLoader());
         ClientBuilder clientBuilder = ClientBuilder.newBuilder()
                 .withConfig(httpConfig)
                 .connectTimeout(this.connectTimeout, this.connectTimeoutUnit)
