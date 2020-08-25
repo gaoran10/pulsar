@@ -70,6 +70,8 @@ jobs:
           df -h
           java -version
           mvn -v
+          ls lib/presto/lib | grep ws.rs
+          ls lib/presto/plugin/pulsar-presto-connector/ | grep ws.rs
 
       - name: run install by skip tests
         if: steps.docs.outputs.changed_only == 'no'
