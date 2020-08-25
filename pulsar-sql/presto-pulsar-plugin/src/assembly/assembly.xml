@@ -33,7 +33,7 @@
             <scope>runtime</scope>
             <excludes>
               <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
-              <exclude>jakarta.ws.rs:javax.ws.rs-api</exclude>
+              <exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>
             </excludes>
         </dependencySet>
     </dependencySets>
