@@ -49,7 +49,6 @@
             <excludes>
                 <exclude>io.airlift:launcher:tar.gz:bin:${airlift.version}</exclude>
                 <exclude>io.airlift:launcher:tar.gz:properties:${airlift.version}</exclude>
-                <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
             </excludes>
         </dependencySet>
         <dependencySet>
