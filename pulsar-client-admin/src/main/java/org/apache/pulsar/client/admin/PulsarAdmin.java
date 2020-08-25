@@ -174,6 +174,8 @@ public class PulsarAdmin implements Closeable {
         LOG.info("PulsarAdmin classLoader: {}", this.getClass().getClassLoader());
         LOG.info("ClientBuilder classLoader: {}", ClientBuilder.class.getClassLoader());
         LOG.info("thread name: {}", Thread.currentThread().getName());
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
         LOG.info("thread context classLoader{}", Thread.currentThread().getContextClassLoader());
         LOG.info("newBuilder classLoader: {}", ClientBuilder.newBuilder().getClass().getClassLoader());
         ClientBuilder clientBuilder = ClientBuilder.newBuilder()
@@ -185,6 +187,7 @@ public class PulsarAdmin implements Closeable {
         boolean useTls = clientConfigData.getServiceUrl().startsWith("https://");
 
         this.client = clientBuilder.build();
+        Thread.currentThread().setContextClassLoader(classLoader);
 
         this.serviceUrl = serviceUrl;
         root = client.target(serviceUrl);
