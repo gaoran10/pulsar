@@ -173,9 +173,9 @@ public class PulsarAdmin implements Closeable {
 
         LOG.info("PulsarAdmin classLoader: {}", this.getClass().getClassLoader());
         LOG.info("ClientBuilder classLoader: {}", ClientBuilder.class.getClassLoader());
-        LOG.info("newBuilder classLoader: {}", ClientBuilder.newBuilder().getClass().getClassLoader());
         LOG.info("thread name: {}", Thread.currentThread().getName());
-        LOG.info("context classLoader{}", Thread.currentThread().getContextClassLoader());
+        LOG.info("thread context classLoader{}", Thread.currentThread().getContextClassLoader());
+        LOG.info("newBuilder classLoader: {}", ClientBuilder.newBuilder().getClass().getClassLoader());
         ClientBuilder clientBuilder = ClientBuilder.newBuilder()
                 .withConfig(httpConfig)
                 .connectTimeout(this.connectTimeout, this.connectTimeoutUnit)

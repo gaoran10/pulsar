@@ -145,7 +145,7 @@ flexible messaging model and an intuitive client API.</description>
     <hdfs-offload-version3>3.2.0</hdfs-offload-version3>
     <org.eclipse.jetty-hdfs-offload>9.3.24.v20180605</org.eclipse.jetty-hdfs-offload>
     <elasticsearch.version>6.3.2</elasticsearch.version>
-    <presto.version>332</presto.version>
+    <presto.version>340</presto.version>
     <flink.version>1.6.0</flink.version>
     <scala.binary.version>2.11</scala.binary.version>
     <debezium.version>1.0.0.Final</debezium.version>
@@ -164,7 +164,7 @@ flexible messaging model and an intuitive client API.</description>
     <commons-configuration.version>1.10</commons-configuration.version>
     <commons-io.version>2.5</commons-io.version>
     <commons-codec.version>1.10</commons-codec.version>
-    <javax.ws.rs-api.version>2.1</javax.ws.rs-api.version>
+    <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
     <log4j.version>1.2.17</log4j.version>
     <hdrHistogram.version>2.1.9</hdrHistogram.version>
     <javax.servlet-api>3.1.0</javax.servlet-api>
