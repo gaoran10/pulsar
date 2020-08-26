@@ -187,7 +187,6 @@ public class PulsarAdmin implements Closeable {
         boolean useTls = clientConfigData.getServiceUrl().startsWith("https://");
 
         this.client = clientBuilder.build();
-        Thread.currentThread().setContextClassLoader(classLoader);
 
         this.serviceUrl = serviceUrl;
         root = client.target(serviceUrl);
@@ -215,6 +214,7 @@ public class PulsarAdmin implements Closeable {
         this.worker = new WorkerImpl(root, auth, readTimeoutMs);
         this.schemas = new SchemasImpl(root, auth, readTimeoutMs);
         this.bookies = new BookiesImpl(root, auth, readTimeoutMs);
+        Thread.currentThread().setContextClassLoader(classLoader);
     }
 
     /**
