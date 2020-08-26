@@ -132,7 +132,7 @@ public class PulsarAdmin implements Closeable {
     public PulsarAdmin(String serviceUrl, ClientConfigurationData clientConfigData) throws PulsarClientException {
         this(serviceUrl, clientConfigData, DEFAULT_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS,
                 DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS,
-                DEFAULT_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                DEFAULT_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS, null);
 
     }
 
@@ -143,7 +143,8 @@ public class PulsarAdmin implements Closeable {
                        int readTimeout,
                        TimeUnit readTimeoutUnit,
                        int requestTimeout,
-                       TimeUnit requestTimeoutUnit) throws PulsarClientException {
+                       TimeUnit requestTimeoutUnit,
+                       ClassLoader clientBuilderClassLoader) throws PulsarClientException {
         this.connectTimeout = connectTimeout;
         this.connectTimeoutUnit = connectTimeoutUnit;
         this.readTimeout = readTimeout;
@@ -171,11 +172,15 @@ public class PulsarAdmin implements Closeable {
         httpConfig.register(MultiPartFeature.class);
         httpConfig.connectorProvider(asyncConnectorProvider);
 
+        ClassLoader originalCtxLoader = null;
+        if (clientBuilderClassLoader != null) {
+            originalCtxLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(clientBuilderClassLoader);
+        }
+
         LOG.info("PulsarAdmin classLoader: {}", this.getClass().getClassLoader());
         LOG.info("ClientBuilder classLoader: {}", ClientBuilder.class.getClassLoader());
         LOG.info("thread name: {}", Thread.currentThread().getName());
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
         LOG.info("thread context classLoader{}", Thread.currentThread().getContextClassLoader());
         LOG.info("newBuilder classLoader: {}", ClientBuilder.newBuilder().getClass().getClassLoader());
         ClientBuilder clientBuilder = ClientBuilder.newBuilder()
@@ -214,7 +219,10 @@ public class PulsarAdmin implements Closeable {
         this.worker = new WorkerImpl(root, auth, readTimeoutMs);
         this.schemas = new SchemasImpl(root, auth, readTimeoutMs);
         this.bookies = new BookiesImpl(root, auth, readTimeoutMs);
-        Thread.currentThread().setContextClassLoader(classLoader);
+
+        if (originalCtxLoader != null) {
+            Thread.currentThread().setContextClassLoader(originalCtxLoader);
+        }
     }
 
     /**
