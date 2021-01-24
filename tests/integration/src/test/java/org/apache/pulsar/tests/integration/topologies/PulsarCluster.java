@@ -392,8 +392,8 @@ public class PulsarCluster {
                 prestoWorkerContainer.withEnv("AWS_SECRET_KEY", "secretkey");
             }
         }
-        log.info("[startPrestoWorker] Starting Presto Worker");
         prestoWorkerContainer.start();
+        log.info("[startPrestoWorker] Starting Presto Worker");
     }
 
     public void stopPrestoWorker() {
@@ -418,9 +418,9 @@ public class PulsarCluster {
                 numSqlFollowWorkers,
                 (name) -> {
                     PrestoWorkerContainer followWorker = new PrestoWorkerContainer(
-                            clusterName, PrestoWorkerContainer.NAME)
+                            clusterName, name)
                             .withNetwork(network)
-                            .withNetworkAliases(PrestoWorkerContainer.NAME)
+                            .withNetworkAliases(name)
                             .withEnv("clusterName", clusterName)
                             .withEnv("zkServers", ZKContainer.NAME)
                             .withEnv("zookeeperServers", ZKContainer.NAME + ":" + ZKContainer.ZK_PORT)
@@ -449,7 +449,7 @@ public class PulsarCluster {
         ));
         // Start workers that have been initialized
         sqlFollowWorkerContainers.values().parallelStream().forEach(PrestoWorkerContainer::start);
-        log.info("Successfully started {} worker containers.", sqlFollowWorkerContainers.size());
+        log.info("Successfully started {} presto follow worker containers.", sqlFollowWorkerContainers.size());
     }
 
     public synchronized void setupFunctionWorkers(String suffix, FunctionRuntimeType runtimeType, int numFunctionWorkers) {
