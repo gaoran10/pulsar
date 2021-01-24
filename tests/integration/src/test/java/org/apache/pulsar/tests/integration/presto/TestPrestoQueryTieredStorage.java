@@ -312,7 +312,7 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
 
             // offload with a low threshold
             output = pulsarCluster.runAdminCommandOnAnyBroker("topics",
-                    "offload", "--size-threshold", "1M", stocksTopic).getStdout();
+                    "offload", "--size-threshold", "0", stocksTopic).getStdout();
             Assert.assertTrue(output.contains("Offload triggered"));
 
             output = pulsarCluster.runAdminCommandOnAnyBroker("topics",
