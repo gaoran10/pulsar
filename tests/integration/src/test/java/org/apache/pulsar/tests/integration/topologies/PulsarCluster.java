@@ -94,6 +94,7 @@ public class PulsarCluster {
         this.network = Network.newNetwork();
         this.enablePrestoWorker = spec.enablePrestoWorker();
 
+        this.sqlFollowWorkerContainers = Maps.newTreeMap();
         if (enablePrestoWorker) {
             prestoWorkerContainer = new PrestoWorkerContainer(clusterName, PrestoWorkerContainer.NAME)
                 .withNetwork(network)
@@ -110,7 +111,6 @@ public class PulsarCluster {
                         "/pulsar/conf/presto/config.properties",
                         BindMode.READ_WRITE);
 
-            this.sqlFollowWorkerContainers = Maps.newTreeMap();
         } else {
             prestoWorkerContainer = null;
         }
