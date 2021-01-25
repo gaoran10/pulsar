@@ -44,10 +44,9 @@ public class PrestoWorkerContainer extends PulsarContainer<PrestoWorkerContainer
     protected void afterStart() {
         this.tailContainerLog();
         DockerUtils.runCommandAsync(this.dockerClient, this.getContainerId(),
-                "touch",
-                "/var/log/pulsar/presto_worker.log");
-        DockerUtils.runCommandAsync(this.dockerClient, this.getContainerId(),
                 "tail", "-f", "/var/log/pulsar/presto_worker.log");
+        DockerUtils.runCommandAsync(this.dockerClient, this.getContainerId(),
+                "tail", "-f", "/pulsar/lib/presto/var/log/server.log");
     }
 
     @Override
