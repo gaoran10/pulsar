@@ -41,7 +41,7 @@ public class PrestoWorkerContainer extends PulsarContainer<PrestoWorkerContainer
     }
 
     @Override
-    protected void beforeStart() {
+    protected void afterStart() {
         this.tailContainerLog();
         DockerUtils.runCommandAsync(this.dockerClient, this.getContainerId(),
                 "touch",
