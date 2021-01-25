@@ -61,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
 
     private final static int ENTRIES_PER_LEDGER = 1024;
-    private final static String OFFLOAD_DRIVER = "s3";
+    private final static String OFFLOAD_DRIVER = "aws-s3";
     private final static String BUCKET = "pulsar-integtest";
     private final static String ENDPOINT = "http://" + S3Container.NAME + ":9090";
 
@@ -313,7 +313,7 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
                 pulsarCluster.runAdminCommandOnAnyBroker(
                         "namespaces", "set-offload-policies",
                         "--bucket", "pulsar-integtest",
-                        "--driver", "s3",
+                        "--driver", OFFLOAD_DRIVER,
                         "--endpoint", "http://" + S3Container.NAME + ":9090",
                         "--offloadAfterElapsed", "1000",
                         "public/default");
@@ -321,7 +321,7 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
                 output = pulsarCluster.runAdminCommandOnAnyBroker(
                         "namespaces", "get-offload-policies").getStdout();
                 Assert.assertTrue(output.contains("pulsar-integtest"));
-                Assert.assertTrue(output.contains("s3"));
+                Assert.assertTrue(output.contains(OFFLOAD_DRIVER));
             }
 
             // offload with a low threshold
