@@ -33,6 +33,9 @@ import org.apache.pulsar.tests.integration.docker.ContainerExecException;
 import org.apache.pulsar.tests.integration.docker.ContainerExecResult;
 import org.apache.pulsar.tests.integration.suites.PulsarTestSuite;
 import org.apache.pulsar.tests.integration.topologies.PulsarCluster;
+import org.testcontainers.shaded.okhttp3.OkHttpClient;
+import org.testcontainers.shaded.okhttp3.Request;
+import org.testcontainers.shaded.okhttp3.Response;
 import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -81,7 +84,6 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
         s3Container.start();
 
         String offloadProperties = getOffloadProperties(BUCKET, null, ENDPOINT);
-        log.info("[setupPresto] offloadProperties: {}" + offloadProperties);
         pulsarCluster.startPrestoWorker(OFFLOAD_DRIVER, offloadProperties);
         pulsarCluster.startPrestoFollowWorkers(2, OFFLOAD_DRIVER, offloadProperties);
     }
@@ -140,6 +142,18 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
                 }
             }
         } while (true);
+
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url("http://" + pulsarCluster.getPrestoWorkerContainer().getUrl() + "/v1/node")
+                .build();
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            Assert.assertNotNull(response.body());
+            String nodeJsonStr = response.body().string();
+            Assert.assertTrue(nodeJsonStr.length() > 0);
+            log.info("presto node info: {}", nodeJsonStr);
+            Assert.assertEquals(nodeJsonStr.split("uri").length, 3);
+        }
 
         @Cleanup
         PulsarClient pulsarClient = PulsarClient.builder()

@@ -376,6 +376,7 @@ public class PulsarCluster {
     }
 
     public void startPrestoFollowWorkers(int numSqlFollowWorkers, String offloadDriver, String offloadProperties) {
+        log.info("start presto follow worker containers.");
         sqlFollowWorkerContainers.putAll(runNumContainers(
                 "sql-follow-worker",
                 numSqlFollowWorkers,
@@ -411,10 +412,10 @@ public class PulsarCluster {
         if (offloadDriver != null && offloadProperties != null) {
             log.info("[startPrestoWorker] set offload env offloadDriver: {}, offloadProperties: {}",
                     offloadDriver, offloadProperties);
-            container.withEnv("PULSAR_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
-            container.withEnv("PULSAR_PREFIX_pulsar.offloader-properties", offloadProperties);
-            container.withEnv("PULSAR_PREFIX_pulsar.offloaders-directory", "/pulsar/offloaders");
-            // used in s3 tests
+            // used to query from tiered storage
+            container.withEnv("SQL_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
+            container.withEnv("SQL_PREFIX_pulsar.offloader-properties", offloadProperties);
+            container.withEnv("SQL_PREFIX_pulsar.offloaders-directory", "/pulsar/offloaders");
             container.withEnv("AWS_ACCESS_KEY_ID", "accesskey");
             container.withEnv("AWS_SECRET_KEY", "secretkey");
         }
