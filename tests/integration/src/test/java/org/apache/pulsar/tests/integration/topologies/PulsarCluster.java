@@ -374,9 +374,9 @@ public class PulsarCluster {
                 .withEnv("pulsar.zookeeper-uri", ZKContainer.NAME + ":" + ZKContainer.ZK_PORT)
                 .withEnv("pulsar.broker-service-url", "http://pulsar-broker-0:8080")
                 .withClasspathResourceMapping(
-                        "presto-coordinator-config.properties",
-                        "/pulsar/conf/presto/config.properties",
-                        BindMode.READ_WRITE);
+                    "presto-coordinator-config.properties",
+                    "/pulsar/conf/presto/config.properties",
+                    BindMode.READ_WRITE);
             if (spec.queryLastMessage) {
                 prestoWorkerContainer.withEnv("pulsar.bookkeeper-use-v2-protocol", "false")
                     .withEnv("pulsar.bookkeeper-explicit-interval", "10");
@@ -431,18 +431,18 @@ public class PulsarCluster {
                                     "/pulsar/conf/presto/config.properties",
                                     BindMode.READ_WRITE);
                     if (spec.queryLastMessage) {
-                        prestoWorkerContainer.withEnv("pulsar.bookkeeper-use-v2-protocol", "false")
+                        followWorker.withEnv("pulsar.bookkeeper-use-v2-protocol", "false")
                                 .withEnv("pulsar.bookkeeper-explicit-interval", "10");
                     }
                     if (offloadDriver != null && offloadProperties != null) {
                         log.info("[startPrestoWorker] set offload env offloadDriver: {}, offloadProperties: {}",
                                 offloadDriver, offloadProperties);
-                        prestoWorkerContainer.withEnv("PULSAR_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
-                        prestoWorkerContainer.withEnv("PULSAR_PREFIX_pulsar.offloader-properties", offloadProperties);
-                        prestoWorkerContainer.withEnv("PULSAR_PREFIX_pulsar.offloaders-directory", "/pulsar/offloaders");
+                        followWorker.withEnv("PULSAR_PREFIX_pulsar.managed-ledger-offload-driver", offloadDriver);
+                        followWorker.withEnv("PULSAR_PREFIX_pulsar.offloader-properties", offloadProperties);
+                        followWorker.withEnv("PULSAR_PREFIX_pulsar.offloaders-directory", "/pulsar/offloaders");
                         // used in s3 tests
-                        prestoWorkerContainer.withEnv("AWS_ACCESS_KEY_ID", "accesskey");
-                        prestoWorkerContainer.withEnv("AWS_SECRET_KEY", "secretkey");
+                        followWorker.withEnv("AWS_ACCESS_KEY_ID", "accesskey");
+                        followWorker.withEnv("AWS_SECRET_KEY", "secretkey");
                     }
                     return followWorker;
                 }

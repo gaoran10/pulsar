@@ -27,3 +27,5 @@ fi
 
 bin/watch-znode.py -z $zookeeperServers -p /initialized-$clusterName -w
 exec /usr/bin/supervisord -c /etc/supervisord.conf
+
+cat conf/presto/config.properties

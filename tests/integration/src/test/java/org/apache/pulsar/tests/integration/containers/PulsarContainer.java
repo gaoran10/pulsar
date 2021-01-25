@@ -131,6 +131,7 @@ public abstract class PulsarContainer<SelfT extends PulsarContainer<SelfT>> exte
     @Override
     public void start() {
         if (httpPort > 0 && servicePort < 0) {
+            log.info("wait strategy name: {} httpPort: {}, httpPath: {}", getContainerName(), httpPort, httpPath);
             this.waitStrategy = new HttpWaitStrategy()
                 .forPort(httpPort)
                 .forStatusCode(200)
@@ -149,7 +150,7 @@ public abstract class PulsarContainer<SelfT extends PulsarContainer<SelfT>> exte
         beforeStart();
         super.start();
         afterStart();
-        log.info("Start pulsar service {} at container {}", serviceName, getContainerId());
+        log.info("[{}] Start pulsar service {} at container {}", getContainerName(), serviceName, getContainerId());
     }
 
     @Override
