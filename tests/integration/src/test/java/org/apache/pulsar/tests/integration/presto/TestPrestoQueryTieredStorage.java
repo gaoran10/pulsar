@@ -147,13 +147,18 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
         Request request = new Request.Builder()
                 .url("http://" + pulsarCluster.getPrestoWorkerContainer().getUrl() + "/v1/node")
                 .build();
-        try (Response response = okHttpClient.newCall(request).execute()) {
-            Assert.assertNotNull(response.body());
-            String nodeJsonStr = response.body().string();
-            Assert.assertTrue(nodeJsonStr.length() > 0);
-            log.info("presto node info: {}", nodeJsonStr);
-            Assert.assertEquals(nodeJsonStr.split("uri").length, 3);
-        }
+        do {
+            try (Response response = okHttpClient.newCall(request).execute()) {
+                Assert.assertNotNull(response.body());
+                String nodeJsonStr = response.body().string();
+                Assert.assertTrue(nodeJsonStr.length() > 0);
+                log.info("presto node info: {}", nodeJsonStr);
+                if (nodeJsonStr.split("uri").length == 3) {
+                    break;
+                }
+                Thread.sleep(1000);
+            }
+        } while (true);
 
         @Cleanup
         PulsarClient pulsarClient = PulsarClient.builder()

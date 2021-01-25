@@ -19,12 +19,17 @@
 package org.apache.pulsar.tests.integration.presto;
 
 import com.google.common.base.Stopwatch;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.impl.schema.JSONSchema;
+import org.apache.pulsar.tests.integration.containers.BrokerContainer;
+import org.apache.pulsar.tests.integration.containers.S3Container;
 import org.apache.pulsar.tests.integration.docker.ContainerExecException;
 import org.apache.pulsar.tests.integration.docker.ContainerExecResult;
 import org.apache.pulsar.tests.integration.suites.PulsarTestSuite;
@@ -55,6 +60,13 @@ public class TestBasicPresto extends PulsarTestSuite {
     @Override
     protected PulsarClusterSpec.PulsarClusterSpecBuilder beforeSetupCluster(String clusterName, PulsarClusterSpec.PulsarClusterSpecBuilder specBuilder) {
         return super.beforeSetupCluster(clusterName, specBuilder.queryLastMessage(true));
+    }
+
+    @Override
+    protected void beforeStartCluster() throws Exception {
+        for (BrokerContainer brokerContainer : pulsarCluster.getBrokers()) {
+            getEnv().forEach(brokerContainer::withEnv);
+        }
     }
 
     @BeforeClass
@@ -252,5 +264,22 @@ public class TestBasicPresto extends PulsarTestSuite {
         System.out.println("");
 
     }
+
+    private final static int ENTRIES_PER_LEDGER = 1024;
+    private final static String OFFLOAD_DRIVER = "aws-s3";
+    private final static String BUCKET = "pulsar-integtest";
+    private final static String ENDPOINT = "http://" + S3Container.NAME + ":9090";
+
+    protected Map<String, String> getEnv() {
+        Map<String, String> result = new HashMap<>();
+        result.put("managedLedgerMaxEntriesPerLedger", String.valueOf(ENTRIES_PER_LEDGER));
+        result.put("managedLedgerMinLedgerRolloverTimeMinutes", "0");
+        result.put("managedLedgerOffloadDriver", OFFLOAD_DRIVER);
+        result.put("s3ManagedLedgerOffloadBucket", BUCKET);
+        result.put("s3ManagedLedgerOffloadServiceEndpoint", ENDPOINT);
+
+        return result;
+    }
+
 
 }
