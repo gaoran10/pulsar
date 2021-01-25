@@ -22,7 +22,7 @@
 ## Edit a properties config file and replace values based on
 ## the ENV variables
 ## export prefix_my-key=new-value
-## ./apply-config-from-env prefix_ file.conf
+## ./apply-config-from-env-with-prefix prefix_ file.conf
 ##
 
 import os, sys
