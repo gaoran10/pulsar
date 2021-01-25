@@ -135,6 +135,7 @@ public abstract class PulsarContainer<SelfT extends PulsarContainer<SelfT>> exte
             this.waitStrategy = new HttpWaitStrategy()
                 .forPort(httpPort)
                 .forStatusCode(200)
+                .forStatusCode(404)
                 .forPath(httpPath)
                 .withStartupTimeout(Duration.of(300, SECONDS));
         } else if (httpPort > 0 || servicePort > 0) {
