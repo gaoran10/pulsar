@@ -417,6 +417,7 @@ public class PulsarCluster {
                 "sql-follow-worker",
                 numSqlFollowWorkers,
                 (name) -> {
+                    log.info("start presto follow worker with name {}", name);
                     PrestoWorkerContainer followWorker = new PrestoWorkerContainer(
                             clusterName, name)
                             .withNetwork(network)
