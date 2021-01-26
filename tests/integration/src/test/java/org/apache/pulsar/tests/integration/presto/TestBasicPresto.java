@@ -47,13 +47,13 @@ public class TestBasicPresto extends TestPulsarSQLBase {
 
     @Test
     public void testSimpleSQLQueryBatched() throws Exception {
-        TopicName topicName = TopicName.get("public/default/stocks_batched");
+        TopicName topicName = TopicName.get("public/default/stocks_batched_" + randomName(5));
         pulsarSQLBasicTest(topicName, true, false);
     }
 
     @Test
     public void testSimpleSQLQueryNonBatched() throws Exception {
-        TopicName topicName = TopicName.get("public/default/stocks_nonbatched");
+        TopicName topicName = TopicName.get("public/default/stocks_nonbatched_" + randomName(5));
         pulsarSQLBasicTest(topicName, false, false);
     }
 

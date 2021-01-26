@@ -44,9 +44,9 @@ public class TestPulsarSQLBase extends PulsarSQLTestSuite {
     protected void pulsarSQLBasicTest(TopicName topic, boolean isBatch, boolean useNsOffloadPolices) throws Exception {
         waitPulsarSQLReady();
 
-        log.info("start prepare data for query.");
+        log.info("start prepare data for query. topic: {}", topic);
         int messageCnt = prepareData(topic, isBatch, useNsOffloadPolices);
-        log.info("finish prepare data for query. messageCnt: {}", messageCnt);
+        log.info("finish prepare data for query. topic: {}, messageCnt: {}", topic, messageCnt);
 
         validateMetadata(topic);
 
