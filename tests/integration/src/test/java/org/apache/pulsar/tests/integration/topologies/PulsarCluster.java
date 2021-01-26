@@ -360,18 +360,18 @@ public class PulsarCluster {
     }
 
     public void stopPrestoWorker() {
-        if (null != prestoWorkerContainer) {
-            prestoWorkerContainer.stop();
-            log.info("Stopped presto coordinator.");
-            prestoWorkerContainer = null;
-        }
-        if (sqlFollowWorkerContainers.size() > 0) {
+        if (sqlFollowWorkerContainers != null && sqlFollowWorkerContainers.size() > 0) {
             for (PrestoWorkerContainer followWorker : sqlFollowWorkerContainers.values()) {
                 followWorker.stop();
                 log.info("Stopped presto follow worker {}.", followWorker.getContainerName());
             }
             sqlFollowWorkerContainers.clear();
             log.info("Stopped all presto follow workers.");
+        }
+        if (null != prestoWorkerContainer) {
+            prestoWorkerContainer.stop();
+            log.info("Stopped presto coordinator.");
+            prestoWorkerContainer = null;
         }
     }
 

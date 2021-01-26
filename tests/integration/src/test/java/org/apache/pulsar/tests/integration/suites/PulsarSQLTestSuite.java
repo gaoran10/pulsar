@@ -43,6 +43,7 @@ public abstract class PulsarSQLTestSuite extends PulsarTestSuite {
     protected PulsarClusterSpec.PulsarClusterSpecBuilder beforeSetupCluster(String clusterName, PulsarClusterSpec.PulsarClusterSpecBuilder specBuilder) {
         specBuilder.queryLastMessage(true);
         specBuilder.clusterName("pulsar-sql-test");
+        specBuilder.numBrokers(1);
         return super.beforeSetupCluster(clusterName, specBuilder);
     }
 

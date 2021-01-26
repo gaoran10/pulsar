@@ -74,7 +74,7 @@ public class TestPrestoQueryTieredStorage extends TestPulsarSQLBase {
 
         String offloadProperties = getOffloadProperties(BUCKET, null, ENDPOINT);
         pulsarCluster.startPrestoWorker(OFFLOAD_DRIVER, offloadProperties);
-        pulsarCluster.startPrestoFollowWorkers(2, OFFLOAD_DRIVER, offloadProperties);
+        pulsarCluster.startPrestoFollowWorkers(1, OFFLOAD_DRIVER, offloadProperties);
     }
 
     private String getOffloadProperties(String bucket, String region, String endpoint) {

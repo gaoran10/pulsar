@@ -37,6 +37,10 @@ import org.apache.pulsar.tests.integration.docker.ContainerExecResult;
 import org.apache.pulsar.tests.integration.suites.PulsarSQLTestSuite;
 import org.apache.pulsar.tests.integration.topologies.PulsarCluster;
 import org.awaitility.Awaitility;
+import org.testcontainers.shaded.okhttp3.OkHttpClient;
+import org.testcontainers.shaded.okhttp3.Request;
+import org.testcontainers.shaded.okhttp3.Response;
+import org.testng.Assert;
 
 @Slf4j
 public class TestPulsarSQLBase extends PulsarSQLTestSuite {
@@ -68,6 +72,24 @@ public class TestPulsarSQLBase extends PulsarSQLTestSuite {
                 } else {
                     throw cee;
                 }
+            }
+        } while (true);
+
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url("http://" + pulsarCluster.getPrestoWorkerContainer().getUrl() + "/v1/node")
+                .build();
+        do {
+            try (Response response = okHttpClient.newCall(request).execute()) {
+                Assert.assertNotNull(response.body());
+                String nodeJsonStr = response.body().string();
+                Assert.assertTrue(nodeJsonStr.length() > 0);
+                log.info("presto node info: {}", nodeJsonStr);
+                if (nodeJsonStr.contains("uri")) {
+                    log.info("presto node exist.");
+                    break;
+                }
+                Thread.sleep(1000);
             }
         } while (true);
     }
