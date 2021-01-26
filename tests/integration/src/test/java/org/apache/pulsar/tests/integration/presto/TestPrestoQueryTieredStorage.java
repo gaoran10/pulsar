@@ -18,6 +18,19 @@
  */
 package org.apache.pulsar.tests.integration.presto;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.client.BookKeeper;
@@ -43,24 +56,14 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.assertj.core.api.Assertions.assertThat;
-
+/**
+ * Test presto query from tiered storage.
+ */
 @Slf4j
 public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
 
-    private final static int ENTRIES_PER_LEDGER = 1024;
+    private final static int ENTRIES_PER_LEDGER = 100;
     private final static String OFFLOAD_DRIVER = "aws-s3";
     private final static String BUCKET = "pulsar-integtest";
     private final static String ENDPOINT = "http://" + S3Container.NAME + ":9090";
@@ -165,7 +168,7 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
                                     .serviceUrl(pulsarCluster.getPlainTextServiceUrl())
                                     .build();
 
-        String stocksTopic = "stocks-" + randomName(5);
+        String stocksTopic = "stocks_ts_" + (isNamespaceOffload ? "ns" : "nons");
 
         @Cleanup
         Producer<Stock> producer = pulsarClient.newProducer(JSONSchema.of(Stock.class))
@@ -276,6 +279,7 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
         }
 
         assertThat(returnedTimestamps.size()).isEqualTo(0);
+        log.info("finish test presto query from tiered storage. nsOffload {}.", isNamespaceOffload);
     }
 
     @AfterSuite
@@ -324,7 +328,7 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
                         "public/default");
 
                 output = pulsarCluster.runAdminCommandOnAnyBroker(
-                        "namespaces", "get-offload-policies").getStdout();
+                        "namespaces", "get-offload-policies", "public/default").getStdout();
                 Assert.assertTrue(output.contains("pulsar-integtest"));
                 Assert.assertTrue(output.contains(OFFLOAD_DRIVER));
             }

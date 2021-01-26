@@ -265,7 +265,7 @@ public class TestBasicPresto extends PulsarTestSuite {
 
     }
 
-    private final static int ENTRIES_PER_LEDGER = 1024;
+    private final static int ENTRIES_PER_LEDGER = 100;
     private final static String OFFLOAD_DRIVER = "aws-s3";
     private final static String BUCKET = "pulsar-integtest";
     private final static String ENDPOINT = "http://" + S3Container.NAME + ":9090";
