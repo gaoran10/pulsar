@@ -173,7 +173,7 @@ public class TestPrestoQueryTieredStorage extends TestPulsarSQLBase {
                         topicName.getNamespace());
 
                 output = pulsarCluster.runAdminCommandOnAnyBroker(
-                        "namespaces", "get-offload-policies", "public/default").getStdout();
+                        "namespaces", "get-offload-policies", topicName.getNamespace()).getStdout();
                 Assert.assertTrue(output.contains("pulsar-integtest"));
                 Assert.assertTrue(output.contains(OFFLOAD_DRIVER));
             }
