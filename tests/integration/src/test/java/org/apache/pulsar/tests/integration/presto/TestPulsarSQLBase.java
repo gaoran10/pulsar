@@ -131,6 +131,7 @@ public class TestPulsarSQLBase extends PulsarSQLTestSuite {
             printCurrent(res);
             timestamps.add(res.getTimestamp("__publish_time__"));
         }
+        log.info("query result for topic {} timestamps size {}", topic, timestamps.size());
 
         assertThat(timestamps.size()).isGreaterThan(messageNum - 2);
 
@@ -145,7 +146,14 @@ public class TestPulsarSQLBase extends PulsarSQLTestSuite {
             returnedTimestamps.add(res.getTimestamp("__publish_time__"));
         }
 
-        assertThat(returnedTimestamps.size() + 1).isEqualTo(timestamps.size() / 2);
+        log.info("query result for topic {} returnedTimestamps size: {}", topic, returnedTimestamps.size());
+        if (timestamps.size() % 2 == 0) {
+            // for example: total size 10, the right receive number is 4, so 4 + 1 == 10 / 2
+            assertThat(returnedTimestamps.size() + 1).isEqualTo(timestamps.size() / 2);
+        } else {
+            // for example: total size 101, the right receive number is 50, so 50 == (101 - 1) / 2
+            assertThat(returnedTimestamps.size()).isEqualTo((timestamps.size() - 1) / 2);
+        }
 
         // Try with a predicate that has a earlier time than any entry
         // Should return all rows
@@ -160,6 +168,7 @@ public class TestPulsarSQLBase extends PulsarSQLTestSuite {
             returnedTimestamps.add(res.getTimestamp("__publish_time__"));
         }
 
+        log.info("query result for topic {} returnedTimestamps size: {}", topic, returnedTimestamps.size());
         assertThat(returnedTimestamps.size()).isEqualTo(timestamps.size());
 
         // Try with a predicate that has a latter time than any entry
@@ -176,6 +185,7 @@ public class TestPulsarSQLBase extends PulsarSQLTestSuite {
             returnedTimestamps.add(res.getTimestamp("__publish_time__"));
         }
 
+        log.info("query result for topic {} returnedTimestamps size: {}", topic, returnedTimestamps.size());
         assertThat(returnedTimestamps.size()).isEqualTo(0);
     }
 
