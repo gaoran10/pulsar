@@ -36,8 +36,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.client.BookKeeper;
 import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.pulsar.client.admin.PulsarAdmin;
+import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
+import org.apache.pulsar.client.api.SubscriptionInitialPosition;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.client.impl.schema.JSONSchema;
 import org.apache.pulsar.tests.integration.containers.BrokerContainer;
@@ -169,6 +171,13 @@ public class TestPrestoQueryTieredStorage extends PulsarTestSuite {
                                     .build();
 
         String stocksTopic = "stocks_ts_" + (isNamespaceOffload ? "ns" : "nons");
+
+        @Cleanup
+        Consumer<Stock> consumer = pulsarClient.newConsumer(JSONSchema.of(Stock.class))
+                .topic(stocksTopic)
+                .subscriptionName("test")
+                .subscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                .subscribe();
 
         @Cleanup
         Producer<Stock> producer = pulsarClient.newProducer(JSONSchema.of(Stock.class))
