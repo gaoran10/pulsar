@@ -415,7 +415,8 @@ public class PulsarSplitManager implements ConnectorSplitManager {
 
                             PredicatePushdownInfo predicatePushdownInfo =
                                 new PredicatePushdownInfo(overallStartPos, overallEndPos, numOfEntries);
-                            log.info("Predicate pushdown optimization calculated: {}", predicatePushdownInfo);
+                            log.info("Predicate pushdown optimization calculated: {} for topic: {}",
+                                    predicatePushdownInfo, topicNamePersistenceEncoding);
                             return predicatePushdownInfo;
                         }
                     }

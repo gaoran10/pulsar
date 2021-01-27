@@ -141,6 +141,7 @@ public class BlobStoreBackedReadHandleImpl implements ReadHandle {
 
                     promise.complete(LedgerEntriesImpl.create(entries));
                 } catch (Throwable t) {
+                    log.error("Failed to read data from tiered storage.", t);
                     promise.completeExceptionally(t);
                     entries.forEach(LedgerEntry::close);
                 }

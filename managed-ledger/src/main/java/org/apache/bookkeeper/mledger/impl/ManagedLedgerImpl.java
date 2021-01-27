@@ -1726,6 +1726,9 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
             openFuture.whenCompleteAsync((res, ex) -> {
                 mbean.endDataLedgerOpenOp();
                 if (ex != null) {
+                    log.error("[{}] Failed to open ledger {} for reading", name, ledgerId, ex);
+                    log.error(name + " - Failed to open ledger " + ledgerId + " for reading", ex);
+                    log.error("Failed to open ledger " + ledgerId + " for reading", ex);
                     ledgerCache.remove(ledgerId, promise);
                     promise.completeExceptionally(createManagedLedgerException(ex));
                 } else {
