@@ -279,6 +279,7 @@ public class PulsarSplitManager implements ConnectorSplitManager {
                     this.connectorId,
                     tupleDomain,
                     managedLedgerFactory,
+                    managedLedgerConfig,
                     topicNamePersistenceEncoding,
                     numEntries);
 
@@ -354,6 +355,7 @@ public class PulsarSplitManager implements ConnectorSplitManager {
         public static PredicatePushdownInfo getPredicatePushdownInfo(String connectorId,
                                                                      TupleDomain<ColumnHandle> tupleDomain,
                                                                      ManagedLedgerFactory managedLedgerFactory,
+                                                                     ManagedLedgerConfig managedLedgerConfig,
                                                                      String topicNamePersistenceEncoding,
                                                                      long totalNumEntries) throws
                 ManagedLedgerException, InterruptedException {
@@ -362,7 +364,7 @@ public class PulsarSplitManager implements ConnectorSplitManager {
             try {
                 readOnlyCursor = managedLedgerFactory.openReadOnlyCursor(
                         topicNamePersistenceEncoding,
-                        PositionImpl.earliest, new ManagedLedgerConfig());
+                        PositionImpl.earliest, managedLedgerConfig);
 
                 if (tupleDomain.getDomains().isPresent()) {
                     Domain domain = tupleDomain.getDomains().get().get(PulsarInternalColumn.PUBLISH_TIME
