@@ -138,6 +138,7 @@ public class PulsarSplitManager implements ConnectorSplitManager {
                 log.debug("Splits for partitioned topic %s: %s", topicName, splits);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             log.error(e, "Failed to get splits");
             throw new RuntimeException(e);
         }
@@ -315,6 +316,10 @@ public class PulsarSplitManager implements ConnectorSplitManager {
                 splits.add(pulsarSplit);
             }
             return splits;
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e, "Failed to getSplitsForTopic %s", topicNamePersistenceEncoding);
+            throw new RuntimeException("Failed to getSplitsForTopic " + topicNamePersistenceEncoding);
         } finally {
             if (readOnlyCursor != null) {
                 try {
@@ -409,11 +414,15 @@ public class PulsarSplitManager implements ConnectorSplitManager {
 
                             PredicatePushdownInfo predicatePushdownInfo =
                                 new PredicatePushdownInfo(overallStartPos, overallEndPos, numOfEntries);
-                            log.debug("Predicate pushdown optimization calculated: %s", predicatePushdownInfo);
+                            log.info("Predicate pushdown optimization calculated: %s", predicatePushdownInfo);
                             return predicatePushdownInfo;
                         }
                     }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error(e, "Failed to getPredicatePushdownInfo %s", topicNamePersistenceEncoding);
+                throw new RuntimeException("Failed to getPredicatePushdownInfo " + topicNamePersistenceEncoding);
             } finally {
                 if (readOnlyCursor != null) {
                     readOnlyCursor.close();
