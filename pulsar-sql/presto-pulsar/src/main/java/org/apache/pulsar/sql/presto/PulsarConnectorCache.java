@@ -115,6 +115,7 @@ public class PulsarConnectorCache {
         return new ManagedLedgerFactoryImpl(bkClientConfiguration, managedLedgerFactoryConfig);
     }
 
+
     public ManagedLedgerConfig getManagedLedgerConfig(NamespaceName namespaceName, OffloadPolicies offloadPolicies,
                                                       PulsarConnectorConfig pulsarConnectorConfig) {
         ManagedLedgerConfig managedLedgerConfig = new ManagedLedgerConfig();
