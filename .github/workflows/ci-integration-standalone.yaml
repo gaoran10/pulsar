@@ -17,7 +17,7 @@
 # under the License.
 #
 
-name: CI - Integration - Sql
+name: CI - Integration - Standalone
 on:
   pull_request:
     branches:
@@ -31,7 +31,7 @@ env:
 
 jobs:
 
-  sql:
+  standalone:
     name:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -84,10 +84,10 @@ jobs:
         if: steps.docs.outputs.changed_only == 'no'
         run: mvn -B -f docker/pulsar-all/pom.xml install -am -Pdocker -DskipTests -Ddocker.nocache=true
 
-      - name: build artifacts and docker pulsar latest test image
+      - name: build artifacts and docker image
         if: steps.docs.outputs.changed_only == 'no'
         run: mvn -B -f tests/docker-images/pom.xml install -am -Pdocker -DskipTests
 
       - name: run integration tests
         if: steps.docs.outputs.changed_only == 'no'
-        run: mvn -B -f tests/pom.xml test -DintegrationTestSuiteFile=pulsar-sql.xml -DintegrationTests -DredirectTestOutputToFile=false -DtestForkCount=1
+        run: mvn -B -f tests/pom.xml test -DintegrationTestSuiteFile=pulsar-standalone.xml -DintegrationTests -DredirectTestOutputToFile=false
