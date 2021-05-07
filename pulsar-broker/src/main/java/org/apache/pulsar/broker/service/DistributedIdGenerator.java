@@ -51,7 +51,8 @@ public class DistributedIdGenerator {
     public DistributedIdGenerator(CoordinationService cs, String path, String prefix) throws Exception {
         this.prefix = prefix;
         this.counter = new AtomicLong(0);
-        this.generatorInstanceId = cs.getNextCounterValue(path).get();
+//        this.generatorInstanceId = cs.getNextCounterValue(path).get();
+        this.generatorInstanceId = counter.get();
         log.info("Broker distributed id generator started with instance id {}-{}", prefix, generatorInstanceId);
     }
 

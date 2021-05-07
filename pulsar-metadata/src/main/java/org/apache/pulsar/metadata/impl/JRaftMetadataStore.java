@@ -18,6 +18,8 @@
  */
 package org.apache.pulsar.metadata.impl;
 
+import static com.alipay.sofa.jraft.util.BytesUtil.readUtf8;
+
 import com.alipay.sofa.jraft.rhea.client.DefaultRheaKVStore;
 import com.alipay.sofa.jraft.rhea.client.RheaIterator;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
@@ -28,7 +30,14 @@ import com.alipay.sofa.jraft.rhea.options.configured.MultiRegionRouteTableOption
 import com.alipay.sofa.jraft.rhea.options.configured.PlacementDriverOptionsConfigured;
 import com.alipay.sofa.jraft.rhea.options.configured.RheaKVStoreOptionsConfigured;
 import com.alipay.sofa.jraft.rhea.storage.KVEntry;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.metadata.api.GetResult;
 import org.apache.pulsar.metadata.api.MetadataStoreConfig;
@@ -36,26 +45,15 @@ import org.apache.pulsar.metadata.api.Stat;
 import org.apache.pulsar.metadata.api.extended.CreateOption;
 import org.apache.pulsar.metadata.api.extended.MetadataStoreExtended;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-
-import static com.alipay.sofa.jraft.util.BytesUtil.readUtf8;
-
 @Slf4j
 public class JRaftMetadataStore extends AbstractMetadataStore implements MetadataStoreExtended {
 
+    @Getter
     private final RheaKVStore rheaKVStore = new DefaultRheaKVStore();
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     public JRaftMetadataStore(String metadataURL, MetadataStoreConfig metadataStoreConfig) {
         init(metadataURL);
     }
-
 
     public void init(String metadataUrl) {
         String serverList = metadataUrl.replace("jraft://", "");
@@ -101,7 +99,7 @@ public class JRaftMetadataStore extends AbstractMetadataStore implements Metadat
 
     @Override
     protected CompletableFuture<List<String>> getChildrenFromStore(String path) {
-        List<String> list = new ArrayList<>();
+        Set<String> set = new TreeSet<>();
         final RheaIterator<KVEntry> it = rheaKVStore.iterator(path, null, 100);
         while (it.hasNext()) {
             final KVEntry kv = it.next();
@@ -109,12 +107,14 @@ public class JRaftMetadataStore extends AbstractMetadataStore implements Metadat
             if (key.startsWith(path)) {
                 String replaceResult = key.replaceFirst(path, "");
                 String[] strings = replaceResult.split("/");
-                if (strings.length == 2) {
-                    list.add(strings[1]);
+                if (path.equals("/")) {
+                    set.add(strings[0]);
+                }else if (strings.length >= 2) {
+                    set.add(strings[1]);
                 }
             }
         }
-        return CompletableFuture.completedFuture(list);
+        return CompletableFuture.completedFuture(new ArrayList<>(set));
     }
 
     @Override
@@ -147,6 +147,7 @@ public class JRaftMetadataStore extends AbstractMetadataStore implements Metadat
 
     @Override
     protected CompletableFuture<Stat> storePut(String path, byte[] data, Optional<Long> optExpectedVersion, EnumSet<CreateOption> options) {
+        log.info("storePut path: {}, data: {}", path, data);
         CompletableFuture<Stat> putFuture = new CompletableFuture<>();
         rheaKVStore.put(path, data).whenComplete((flag, throwable) -> {
             if (throwable != null) {
@@ -163,51 +164,6 @@ public class JRaftMetadataStore extends AbstractMetadataStore implements Metadat
     public void close() throws Exception {
         super.close();
         rheaKVStore.shutdown();
-    }
-
-    public static void main(String[] args) throws Exception {
-        JRaftMetadataStore jRaftMetadataStore = new JRaftMetadataStore("jraft://" + Configs.ALL_NODE_ADDRESSES, null);
-
-        CompletableFuture<Stat> future =
-                jRaftMetadataStore.put("/ledgers", new byte[0], Optional.empty());
-        jRaftMetadataStore.waitFuture(future);
-        System.out.println("Finish put operation");
-
-        future = jRaftMetadataStore.put("/ledgers/ledger-1", "leger-1".getBytes(StandardCharsets.UTF_8), Optional.empty());
-        jRaftMetadataStore.waitFuture(future);
-
-        future = jRaftMetadataStore.put("/ledgers/ledger-2", "leger-2".getBytes(StandardCharsets.UTF_8), Optional.empty());
-        jRaftMetadataStore.waitFuture(future);
-
-        future = jRaftMetadataStore.put("/ledgers/ledger-2/data", "leger-2".getBytes(StandardCharsets.UTF_8), Optional.empty());
-        jRaftMetadataStore.waitFuture(future);
-
-        CompletableFuture<Optional<GetResult>> getFuture = jRaftMetadataStore.get("/ledgers");
-        jRaftMetadataStore.waitFuture(getFuture);
-
-        CompletableFuture<List<String>> childrenFuture =
-                jRaftMetadataStore.getChildrenFromStore("/ledgers");
-        jRaftMetadataStore.waitFuture(childrenFuture);
-        List<String> children =  childrenFuture.get();
-        System.out.println("children " + children);
-
-        CompletableFuture<Boolean> existsFuture = jRaftMetadataStore.existsFromStore("unknown");
-        jRaftMetadataStore.waitFuture(existsFuture);
-        System.out.println("unknown path exists is " + existsFuture.get());
-
-        System.out.println("Finish get operation");
-        jRaftMetadataStore.close();
-    }
-
-    public void waitFuture(CompletableFuture<?> future) throws InterruptedException {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        future.whenComplete((ignored, throwable) -> {
-            if (throwable != null) {
-                throwable.printStackTrace();
-            }
-            countDownLatch.countDown();
-        });
-        countDownLatch.await();
     }
 
 }
