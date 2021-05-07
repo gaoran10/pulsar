@@ -37,6 +37,6 @@ public class LocalZooKeeperCache extends ZooKeeperCache {
 
     public LocalZooKeeperCache(final ZooKeeper zk, int zkOperationTimeoutSeconds, final OrderedExecutor executor,
                                MetadataStore metadataStore) {
-        super("local-zk", zk, zkOperationTimeoutSeconds, executor, metadataStore);
+        super("local-zk", null, zkOperationTimeoutSeconds, executor, metadataStore);
     }
 }

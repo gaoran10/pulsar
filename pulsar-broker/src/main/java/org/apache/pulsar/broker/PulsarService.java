@@ -593,8 +593,7 @@ public class PulsarService implements AutoCloseable {
             protocolHandlers.initialize(config);
 
             // Now we are ready to start services
-            localZooKeeperConnectionProvider = new LocalZooKeeperConnectionService(getZooKeeperClientFactory(),
-                    config.getZookeeperServers(), config.getZooKeeperSessionTimeoutMillis());
+            localZooKeeperConnectionProvider = null;
             ZookeeperSessionExpiredHandler sessionExpiredHandler = null;
             if (ZookeeperSessionExpiredHandlers.RECONNECT_POLICY.equals(config.getZookeeperSessionExpiredPolicy())) {
                 sessionExpiredHandler = ZookeeperSessionExpiredHandlers.reconnectWhenZookeeperSessionExpired(
@@ -915,9 +914,9 @@ public class PulsarService implements AutoCloseable {
 
         LOG.info("starting configuration cache service");
 
-        this.localZkCache = new LocalZooKeeperCache(getZkClient(), config.getZooKeeperOperationTimeoutSeconds(),
+        this.localZkCache = new LocalZooKeeperCache(null, config.getZooKeeperOperationTimeoutSeconds(),
                 getOrderedExecutor(), localMetadataStore);
-        this.globalZkCache = new GlobalZooKeeperCache(getZooKeeperClientFactory(),
+        this.globalZkCache = new GlobalZooKeeperCache(null,
                 (int) config.getZooKeeperSessionTimeoutMillis(),
                 config.getZooKeeperOperationTimeoutSeconds(), config.getConfigurationStoreServers(),
                 getOrderedExecutor(), this.cacheExecutor, config.getZooKeeperCacheExpirySeconds(), localMetadataStore);
