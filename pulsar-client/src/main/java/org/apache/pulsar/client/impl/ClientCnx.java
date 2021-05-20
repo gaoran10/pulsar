@@ -58,6 +58,7 @@ import org.apache.pulsar.client.api.PulsarClientException.ConnectException;
 import org.apache.pulsar.client.api.PulsarClientException.TimeoutException;
 import org.apache.pulsar.client.impl.BinaryProtoLookupService.LookupDataResult;
 import org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+import org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 import org.apache.pulsar.common.tls.TlsHostnameVerifier;
 import org.apache.pulsar.client.impl.transaction.TransactionBufferHandler;
 import org.apache.pulsar.client.util.TimedCompletableFuture;
@@ -794,6 +795,7 @@ public class ClientCnx extends PulsarHandler {
 
     @Override
     protected void handleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse) {
+        log.info("handleGetSchemaResponse ------------------------");
         checkArgument(state == State.Ready);
 
         long requestId = commandGetSchemaResponse.getRequestId();
@@ -847,6 +849,7 @@ public class ClientCnx extends PulsarHandler {
     private <T> void sendRequestAndHandleTimeout(ByteBuf requestMessage, long requestId,
                                                                  RequestType requestType, boolean flush,
                                                                  TimedCompletableFuture<T> future) {
+        log.info("sendRequestAndHandleTimeout requestId: {}, flush: {}", requestId, flush);
         pendingRequests.put(requestId, future);
         if (flush) {
             ctx.writeAndFlush(requestMessage).addListener(writeFuture -> {

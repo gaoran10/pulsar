@@ -83,6 +83,7 @@ import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.protocol.ByteBufPair;
 import org.apache.pulsar.common.protocol.Commands;
 import org.apache.pulsar.common.protocol.Commands.ChecksumType;
+import org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
 import org.apache.pulsar.common.protocol.schema.SchemaHash;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
@@ -1293,6 +1294,8 @@ public class ProducerImpl<T> extends ProducerBase<T> implements TimerTask, Conne
 
         SchemaInfo schemaInfo = null;
         if (schema != null) {
+            log.info("producerImpl connectionOpened schemaClass {}, connectionOpened {}",
+                    schema.getClass().getSimpleName(), schema.getSchemaInfo());
             if (schema.getSchemaInfo() != null) {
                 if (schema.getSchemaInfo().getType() == SchemaType.JSON) {
                     // for backwards compatibility purposes
@@ -1324,7 +1327,10 @@ public class ProducerImpl<T> extends ProducerBase<T> implements TimerTask, Conne
                     String producerName = response.getProducerName();
                     long lastSequenceId = response.getLastSequenceId();
                     schemaVersion = Optional.ofNullable(response.getSchemaVersion());
-                    schemaVersion.ifPresent(v -> schemaCache.put(SchemaHash.of(schema), v));
+                    schemaVersion.ifPresent(v -> {
+                        log.info("producerImpl connectionOpened schemaVersion: {}", BytesSchemaVersion.of(v));
+                        schemaCache.put(SchemaHash.of(schema), v);
+                    });
 
                     // We are now reconnected to broker and clear to send messages. Re-send all pending messages and
                     // set the cnx pointer so that new messages will be sent immediately

@@ -319,13 +319,17 @@ public abstract class PulsarDecoder extends ChannelInboundHandlerAdapter {
                 break;
 
             case GET_SCHEMA:
+                log.info("Get schema --------------------------");
                 checkArgument(cmd.hasGetSchema());
                 try {
                     interceptCommand(cmd);
                     handleGetSchema(cmd.getGetSchema());
                 } catch (InterceptException e) {
+                    log.error("Get schema intercept exception.", e);
                     ctx.writeAndFlush(Commands.newGetSchemaResponseError(cmd.getGetSchema().getRequestId(),
                             getServerError(e.getErrorCode()), e.getMessage()));
+                } catch (Exception e) {
+                    log.error("Get schema exception.", e);
                 }
                 break;
 
