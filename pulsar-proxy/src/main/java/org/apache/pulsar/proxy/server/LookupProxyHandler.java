@@ -37,6 +37,7 @@ import org.apache.pulsar.common.api.proto.CommandPartitionedTopicMetadata;
 import org.apache.pulsar.common.api.proto.ServerError;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.protocol.schema.BytesSchemaVersion;
+import org.apache.pulsar.common.protocol.schema.SchemaVersion;
 import org.apache.pulsar.policies.data.loadbalancer.ServiceLookupData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -358,6 +359,10 @@ public class LookupProxyHandler {
         final long clientRequestId = commandGetSchema.getRequestId();
         String serviceUrl = getBrokerServiceUrl(clientRequestId);
         String topic = commandGetSchema.getTopic();
+        Optional<SchemaVersion> schemaVersion = Optional.empty();
+        if (commandGetSchema.hasSchemaVersion()) {
+            schemaVersion = Optional.of(commandGetSchema.getSchemaVersion()).map(BytesSchemaVersion::of);
+        }
 
         if(!StringUtils.isNotBlank(serviceUrl)) {
             return;
@@ -374,17 +379,13 @@ public class LookupProxyHandler {
                     addr, topic, clientRequestId);
         }
 
+        final Optional<SchemaVersion> finalSchemaVersion = schemaVersion;
         proxyConnection.getConnectionPool().getConnection(addr).thenAccept(clientCnx -> {
             // Connected to backend broker
             log.info("lookupProxyHandler get connection requestId: {}", clientRequestId);
             long requestId = proxyConnection.newRequestId();
             ByteBuf command;
-            byte[] schemaVersion = null;
-            if (commandGetSchema.hasSchemaVersion()) {
-                schemaVersion = commandGetSchema.getSchemaVersion();
-            }
-            command = Commands.newGetSchema(requestId, topic,
-                    Optional.ofNullable(schemaVersion).map(BytesSchemaVersion::of));
+            command = Commands.newGetSchema(requestId, topic, finalSchemaVersion);
             clientCnx.sendGetRawSchema(command, requestId).whenComplete((r, t) -> {
                 if (t != null) {
                     log.warn("[{}] Failed to get schema {}: {}", clientAddress, topic, t);
