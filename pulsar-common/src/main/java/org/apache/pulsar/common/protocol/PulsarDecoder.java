@@ -107,6 +107,7 @@ public abstract class PulsarDecoder extends ChannelInboundHandlerAdapter {
             int cmdSize = (int) buffer.readUnsignedInt();
             cmd.parseFrom(buffer, cmdSize);
 
+            log.info("[{}] Received cmd {}", ctx.channel().remoteAddress(), cmd.getType());
             if (log.isDebugEnabled()) {
                 log.debug("[{}] Received cmd {}", ctx.channel().remoteAddress(), cmd.getType());
             }
@@ -427,6 +428,8 @@ public abstract class PulsarDecoder extends ChannelInboundHandlerAdapter {
             default:
                 break;
             }
+        } catch (Exception e) {
+            log.error("Failed to handle command.", e);
         } finally {
             buffer.release();
         }

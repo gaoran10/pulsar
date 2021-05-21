@@ -677,7 +677,8 @@ public class ClientCnx extends PulsarHandler {
     protected void handleError(CommandError error) {
         checkArgument(state == State.SentConnectFrame || state == State.Ready);
 
-        log.warn("{} Received error from server: {}", ctx.channel(), error.getMessage());
+        log.warn("{} Received error from server: {}, request id: {}",
+                ctx.channel(), error.getMessage(), error.getRequestId());
         long requestId = error.getRequestId();
         if (error.getError() == ServerError.ProducerBlockedQuotaExceededError) {
             log.warn("{} Producer creation has been blocked because backlog quota exceeded for producer topic",
@@ -881,12 +882,14 @@ public class ClientCnx extends PulsarHandler {
 
     public CompletableFuture<Optional<SchemaInfo>> sendGetSchema(ByteBuf request, long requestId) {
         return sendGetRawSchema(request, requestId).thenCompose(commandGetSchemaResponse -> {
+            log.error("sendGetRawSchema finish request id {}", requestId);
             if (commandGetSchemaResponse.hasErrorCode()) {
                 // Request has failed
                 ServerError rc = commandGetSchemaResponse.getErrorCode();
                 if (rc == ServerError.TopicNotFound) {
                     return CompletableFuture.completedFuture(Optional.empty());
                 } else {
+                    log.error("sendGetRawSchema failed request id {}", requestId);
                     return FutureUtil.failedFuture(
                         getPulsarClientException(rc, commandGetSchemaResponse.getErrorMessage()));
                 }

@@ -225,10 +225,10 @@ public class BinaryProtoLookupService implements LookupService {
             long requestId = client.newRequestId();
             ByteBuf request = Commands.newGetSchema(requestId, topicName.toString(),
                 Optional.ofNullable(BytesSchemaVersion.of(version)));
-            log.info("sendGetSchema topic {} version {}", topicName, BytesSchemaVersion.of(version));
+            log.info("request id {} sendGetSchema topic {} version {}", requestId, topicName, BytesSchemaVersion.of(version));
             clientCnx.sendGetSchema(request, requestId).whenComplete((r, t) -> {
                 if (t != null) {
-                    log.warn("[{}] failed to get schema : {}", topicName.toString(),
+                    log.warn("[{}] request id {} failed to get schema : {}", topicName.toString(), requestId,
                         t.getMessage(), t);
                     schemaFuture.completeExceptionally(t);
                 } else {
