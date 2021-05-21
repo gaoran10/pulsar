@@ -350,6 +350,7 @@ public class LookupProxyHandler {
 
     public void handleGetSchema(CommandGetSchema commandGetSchema) {
         getSchemaRequests.inc();
+        log.info("[{}] Received GetSchema {}", clientAddress, commandGetSchema);
         if (log.isDebugEnabled()) {
             log.debug("[{}] Received GetSchema {}", clientAddress, commandGetSchema);
         }
@@ -366,6 +367,8 @@ public class LookupProxyHandler {
         if(addr == null){
             return;
         }
+        log.info("Getting connections to '{}' for getting schema of topic '{}' with clientReq Id '{}'",
+                addr, topic, clientRequestId);
         if (log.isDebugEnabled()) {
             log.debug("Getting connections to '{}' for getting schema of topic '{}' with clientReq Id '{}'",
                     addr, topic, clientRequestId);
@@ -373,6 +376,7 @@ public class LookupProxyHandler {
 
         proxyConnection.getConnectionPool().getConnection(addr).thenAccept(clientCnx -> {
             // Connected to backend broker
+            log.info("lookupProxyHandler get connection requestId: {}", clientRequestId);
             long requestId = proxyConnection.newRequestId();
             ByteBuf command;
             byte[] schemaVersion = null;
@@ -395,6 +399,7 @@ public class LookupProxyHandler {
             });
         }).exceptionally(ex -> {
             // Failed to connect to backend broker
+            log.error("lookupProxyHandler handleGetSchema error. requestId: {}", clientRequestId, ex);
             proxyConnection.ctx().writeAndFlush(
                     Commands.newError(clientRequestId, ServerError.ServiceNotReady, ex.getMessage()));
             return null;

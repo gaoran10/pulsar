@@ -94,6 +94,7 @@ public abstract class PulsarDecoder extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        log.info("channel read");
         if (msg instanceof HAProxyMessage) {
             HAProxyMessage proxyMessage = (HAProxyMessage) msg;
             this.proxyMessage = proxyMessage;

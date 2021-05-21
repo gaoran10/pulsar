@@ -158,6 +158,7 @@ public class ConnectionPool implements Closeable {
 
     private CompletableFuture<ClientCnx> createConnection(InetSocketAddress logicalAddress,
             InetSocketAddress physicalAddress, int connectionKey) {
+        log.info("Connection for {} not found in cache", logicalAddress);
         if (log.isDebugEnabled()) {
             log.debug("Connection for {} not found in cache", logicalAddress);
         }
@@ -198,6 +199,7 @@ public class ConnectionPool implements Closeable {
             cnx.setRemoteHostName(physicalAddress.getHostName());
 
             cnx.connectionFuture().thenRun(() -> {
+                log.info("[{}] Connection handshake completed", cnx.channel());
                 if (log.isDebugEnabled()) {
                     log.debug("[{}] Connection handshake completed", cnx.channel());
                 }
