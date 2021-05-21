@@ -217,7 +217,7 @@ public class BinaryProtoLookupService implements LookupService {
 
     @Override
     public CompletableFuture<Optional<SchemaInfo>> getSchema(TopicName topicName, byte[] version) {
-        log.info("getSchema topic {} version {}", topicName, BytesSchemaVersion.of(version).toString());
+        log.info("getSchema topic {} version {}", topicName, BytesSchemaVersion.of(version));
         InetSocketAddress socketAddress = serviceNameResolver.resolveHost();
         CompletableFuture<Optional<SchemaInfo>> schemaFuture = new CompletableFuture<>();
 
@@ -225,7 +225,7 @@ public class BinaryProtoLookupService implements LookupService {
             long requestId = client.newRequestId();
             ByteBuf request = Commands.newGetSchema(requestId, topicName.toString(),
                 Optional.ofNullable(BytesSchemaVersion.of(version)));
-            log.info("sendGetSchema topic {} version {}", topicName, BytesSchemaVersion.of(version).toString());
+            log.info("sendGetSchema topic {} version {}", topicName, BytesSchemaVersion.of(version));
             clientCnx.sendGetSchema(request, requestId).whenComplete((r, t) -> {
                 if (t != null) {
                     log.warn("[{}] failed to get schema : {}", topicName.toString(),
