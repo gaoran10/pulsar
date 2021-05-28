@@ -543,7 +543,11 @@ public abstract class AbstractTopic implements Topic {
     }
 
     protected void setSchemaCompatibilityStrategy (Policies policies) {
+        log.info("setSchemaCompatibilityStrategy topic: {}, schema_compatibility_strategy: {}",
+                topic, policies.schema_compatibility_strategy);
         if (policies.schema_compatibility_strategy == SchemaCompatibilityStrategy.UNDEFINED) {
+            log.info("setSchemaCompatibilityStrategy2 topic: {}, schema_auto_update_compatibility_strategy: {}",
+                    topic, policies.schema_auto_update_compatibility_strategy);
             schemaCompatibilityStrategy = SchemaCompatibilityStrategy.fromAutoUpdatePolicy(
                     policies.schema_auto_update_compatibility_strategy);
         } else {
