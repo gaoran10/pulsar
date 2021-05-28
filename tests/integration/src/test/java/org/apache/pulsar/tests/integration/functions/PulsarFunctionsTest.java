@@ -1586,7 +1586,7 @@ public abstract class PulsarFunctionsTest extends PulsarFunctionsTestBase {
                 .topic(outputTopic)
                 .subscribe();
 
-        final String functionName = "test-merge-fn-" + randomSuffix;
+        final String functionName = "test-merge-fn-" + randomName(8);
         submitFunction(
                 Runtime.JAVA,
                 "",
