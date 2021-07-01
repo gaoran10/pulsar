@@ -688,7 +688,8 @@ public abstract class AdminResource extends PulsarWebResource {
         checkTopicExistsAsync(topicName).thenAccept(exists -> {
             if (exists) {
                 log.warn("[{}] Failed to create already existing topic {}", clientAppId(), topicName);
-                asyncResponse.resume(new RestException(Status.CONFLICT, "This topic already exists"));
+                createLocalFuture
+                        .completeExceptionally(new RestException(Status.CONFLICT, "This topic already exists"));
                 return;
             }
 
@@ -703,7 +704,7 @@ public abstract class AdminResource extends PulsarWebResource {
                     });
         }).exceptionally(ex -> {
             log.error("[{}] Failed to create partitioned topic {}", clientAppId(), topicName, ex);
-            resumeAsyncResponseExceptionally(asyncResponse, ex);
+            createLocalFuture.completeExceptionally(ex);
             return null;
         });
 
