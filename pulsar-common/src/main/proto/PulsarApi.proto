@@ -164,6 +164,7 @@ message MessageMetadata {
 
     // Indicate if the message partition key is set
     optional bool null_partition_key = 30 [default = false];
+    optional bytes schema_id = 31;
 }
 
 message SingleMessageMetadata {

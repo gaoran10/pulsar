@@ -71,6 +71,8 @@ public class MessageImpl<T> implements Message<T> {
     private SchemaHash schemaHash;
     private SchemaInfo schemaInfoForReplicator;
     private SchemaState schemaState = SchemaState.None;
+    private byte[] schemaId;
+
     private Optional<EncryptionContext> encryptionCtx = Optional.empty();
 
     private String topic; // only set for incoming messages
@@ -83,9 +85,15 @@ public class MessageImpl<T> implements Message<T> {
     private boolean poolMessage;
     @Getter
     private long consumerEpoch;
+
     // Constructor for out-going message
     public static <T> MessageImpl<T> create(MessageMetadata msgMetadata, ByteBuffer payload, Schema<T> schema,
-            String topic) {
+                                            String topic) {
+        return create(msgMetadata, payload, schema, topic, null);
+    }
+
+    public static <T> MessageImpl<T> create(MessageMetadata msgMetadata, ByteBuffer payload, Schema<T> schema,
+            String topic, byte[] schemaId) {
         @SuppressWarnings("unchecked")
         MessageImpl<T> msg = (MessageImpl<T>) RECYCLER.get();
         msg.msgMetadata.clear();
@@ -98,6 +106,7 @@ public class MessageImpl<T> implements Message<T> {
         msg.schema = schema;
         msg.schemaHash = SchemaHash.of(schema);
         msg.uncompressedSize = payload.remaining();
+        msg.schemaId = schemaId;
         return msg;
     }
 
@@ -416,6 +425,10 @@ public class MessageImpl<T> implements Message<T> {
     // rather than null.
     @Override
     public byte[] getSchemaVersion() {
+        if (msgMetadata.hasSchemaId()) {
+            byte[] schemaId = msgMetadata.getSchemaId();
+            return (schemaId.length == 0) ? null : schemaId;
+        }
         if (msgMetadata.hasSchemaVersion()) {
             byte[] schemaVersion = msgMetadata.getSchemaVersion();
             return (schemaVersion.length == 0) ? null : schemaVersion;
@@ -502,7 +515,7 @@ public class MessageImpl<T> implements Message<T> {
     }
 
     private T decodeBySchema(byte[] schemaVersion) {
-        T value = poolMessage ? schema.decode(payload.nioBuffer(), schemaVersion) : null;
+        T value = poolMessage ? schema.decode(topic, payload.nioBuffer(), schemaVersion) : null;
         if (value != null) {
             return value;
         }
@@ -510,7 +523,7 @@ public class MessageImpl<T> implements Message<T> {
         if (null == schemaVersion) {
             return schema.decode(getByteBuffer());
         } else {
-            return schema.decode(getByteBuffer(), schemaVersion);
+            return schema.decode(topic, getByteBuffer(), schemaVersion);
         }
     }
 
@@ -526,7 +539,7 @@ public class MessageImpl<T> implements Message<T> {
         byte[] schemaVersion = getSchemaVersion();
         if (kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED) {
             org.apache.pulsar.common.schema.KeyValue keyValue =
-                    (org.apache.pulsar.common.schema.KeyValue) kvSchema.decode(getKeyBytes(), getData(), schemaVersion);
+                    kvSchema.decode(topic, getKeyBytes(), getData(), schemaVersion);
             if (schema instanceof AutoConsumeSchema) {
                 return (T) AutoConsumeSchema.wrapPrimitiveObject(keyValue,
                         ((AutoConsumeSchema) schema).getSchemaInfo(schemaVersion).getType(), schemaVersion);
@@ -542,7 +555,7 @@ public class MessageImpl<T> implements Message<T> {
         KeyValueSchemaImpl kvSchema = getKeyValueSchema();
         if (kvSchema.getKeyValueEncodingType() == KeyValueEncodingType.SEPARATED) {
             org.apache.pulsar.common.schema.KeyValue keyValue =
-                    (org.apache.pulsar.common.schema.KeyValue) kvSchema.decode(getKeyBytes(), getData(), null);
+                    kvSchema.decode(topic, getKeyBytes(), getData(), null);
             if (schema instanceof AutoConsumeSchema) {
                 return (T) AutoConsumeSchema.wrapPrimitiveObject(keyValue,
                         ((AutoConsumeSchema) schema).getSchemaInfo(getSchemaVersion()).getType(), null);
@@ -806,4 +819,9 @@ public class MessageImpl<T> implements Message<T> {
     enum SchemaState {
         None, Ready, Broken
     }
+
+    public byte[] getSchemaId() {
+        return schemaId != null ? schemaId.clone() : null;
+    }
+
 }

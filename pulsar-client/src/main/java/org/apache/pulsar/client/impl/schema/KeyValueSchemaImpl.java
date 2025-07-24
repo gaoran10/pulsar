@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pulsar.client.api.EncodeData;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.SchemaSerializationException;
 import org.apache.pulsar.client.api.schema.KeyValueSchema;
@@ -133,18 +134,18 @@ public class KeyValueSchemaImpl<K, V> extends AbstractSchema<KeyValue<K, V>> imp
 
     // encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
     public byte[] encode(KeyValue<K, V> message) {
+        return encode(null, message).getData();
+    }
+
+    @Override
+    public EncodeData encode(String topic, KeyValue<K, V> message) {
         if (keyValueEncodingType != null && keyValueEncodingType == KeyValueEncodingType.INLINE) {
-            return KeyValue.encode(
-                message.getKey(),
-                keySchema,
-                message.getValue(),
-                valueSchema
-            );
+            return KeyValue.encode(topic, message.getKey(), keySchema, message.getValue(), valueSchema);
         } else {
             if (message.getValue() == null) {
                 return null;
             }
-            return valueSchema.encode(message.getValue());
+            return valueSchema.encode(topic, message.getValue());
         }
     }
 
@@ -158,7 +159,8 @@ public class KeyValueSchemaImpl<K, V> extends AbstractSchema<KeyValue<K, V>> imp
         if (this.keyValueEncodingType == KeyValueEncodingType.SEPARATED) {
             throw new SchemaSerializationException("This method cannot be used under this SEPARATED encoding type");
         }
-        return KeyValue.decode(bytes, (keyBytes, valueBytes) -> decode(keyBytes, valueBytes, schemaVersion));
+        return KeyValue.decode(bytes, (keyBytes, valueBytes) ->
+                decode(null, keyBytes, valueBytes, schemaVersion));
     }
 
     @Override
@@ -167,17 +169,43 @@ public class KeyValueSchemaImpl<K, V> extends AbstractSchema<KeyValue<K, V>> imp
     }
 
     @Override
+    public KeyValue<K, V> decode(String topic, byte[] data, byte[] schemaId) {
+        if (this.keyValueEncodingType == KeyValueEncodingType.SEPARATED) {
+            throw new SchemaSerializationException("This method cannot be used under this SEPARATED encoding type");
+        }
+        return KeyValue.decode(data, (keyBytes, valueBytes) ->
+                decode(topic, keyBytes, valueBytes, schemaId));
+    }
+
+    @Override
     public KeyValue<K, V> decode(ByteBuf byteBuf, byte[] schemaVersion) {
         return decode(ByteBufUtil.getBytes(byteBuf), schemaVersion);
     }
 
-    public KeyValue<K, V> decode(byte[] keyBytes, byte[] valueBytes, byte[] schemaVersion) {
+    public KeyValue<K, V> decode(String topic, byte[] keyBytes, byte[] valueBytes,
+                                 byte[] schemaVersion) {
+//        byte[] keySchemaId = null;
+//        byte[] valueSchemaId = null;
+//        if (schemaVersion != null) {
+//            ByteBuffer buffer = ByteBuffer.wrap(schemaVersion);
+//            int keySchemaIdLength = buffer.getInt();
+//            if (keySchemaIdLength >= 0) {
+//                keySchemaId = new byte[keySchemaIdLength];
+//                buffer.get(keySchemaId);
+//            }
+//            int valueSchemaIdLength = buffer.getInt();
+//            if (valueSchemaIdLength >= 0) {
+//                valueSchemaId = new byte[valueSchemaIdLength];
+//                buffer.get(valueSchemaId);
+//            }
+//        }
+
         K k;
         if (keyBytes == null) {
             k = null;
         } else {
             if (keySchema.supportSchemaVersioning() && schemaVersion != null) {
-                k = keySchema.decode(keyBytes, schemaVersion);
+                k = keySchema.decode(topic, keyBytes, schemaVersion);
             } else {
                 k = keySchema.decode(keyBytes);
             }
@@ -188,7 +216,7 @@ public class KeyValueSchemaImpl<K, V> extends AbstractSchema<KeyValue<K, V>> imp
             v = null;
         } else {
             if (valueSchema.supportSchemaVersioning() && schemaVersion != null) {
-                v = valueSchema.decode(valueBytes, schemaVersion);
+                v = valueSchema.decode(topic, valueBytes, schemaVersion);
             } else {
                 v = valueSchema.decode(valueBytes);
             }

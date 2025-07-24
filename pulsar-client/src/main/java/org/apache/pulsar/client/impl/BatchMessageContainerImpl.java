@@ -137,6 +137,9 @@ class BatchMessageContainerImpl extends AbstractBatchMessageContainer {
         if (producer != null) {
             ProducerImpl.LAST_SEQ_ID_PUSHED_UPDATER.getAndUpdate(producer, prev -> Math.max(prev, msg.getSequenceId()));
         }
+        if (!messageMetadata.hasSchemaId() && msg.getSchemaId() != null) {
+            messageMetadata.setSchemaId(msg.getSchemaId());
+        }
 
         return isBatchFull();
     }
@@ -154,6 +157,9 @@ class BatchMessageContainerImpl extends AbstractBatchMessageContainer {
             msg.getDataBuffer().markReaderIndex();
             try {
                 if (n == 1) {
+                    if (msg.getSchemaId() != null) {
+                        messageMetadata.setSchemaId(msg.getSchemaId());
+                    }
                     batchedMessageMetadataAndPayload.writeBytes(msg.getDataBuffer());
                 } else  {
                     batchedMessageMetadataAndPayload = Commands.serializeSingleMessageInBatchWithPayload(
@@ -368,6 +374,9 @@ class BatchMessageContainerImpl extends AbstractBatchMessageContainer {
         }
         if (!messageMetadata.hasSchemaVersion()) {
             return msg.getSchemaVersion() == null;
+        }
+        if (messageMetadata.hasSchemaId()) {
+            return Arrays.equals(msg.getSchemaId(), messageMetadata.getSchemaId());
         }
         return Arrays.equals(msg.getSchemaVersion(), messageMetadata.getSchemaVersion());
     }

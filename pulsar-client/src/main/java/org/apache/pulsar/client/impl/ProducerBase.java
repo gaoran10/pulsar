@@ -82,6 +82,7 @@ public abstract class ProducerBase<T> extends HandlerState implements Producer<T
     public <V> TypedMessageBuilder<V> newMessage(Schema<V> schema) {
         checkArgument(schema != null);
         try {
+            // TODO load schema info provider for the topic
             schema.setSchemaInfoProvider(getClient().getSchemaProviderLoadingCache().get(getTopic()));
         } catch (Exception e) {
             throw new IllegalArgumentException(e);

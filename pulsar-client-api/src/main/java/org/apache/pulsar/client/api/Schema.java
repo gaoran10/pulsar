@@ -74,6 +74,10 @@ public interface Schema<T> extends Cloneable, AutoCloseable {
      */
     byte[] encode(T message);
 
+    default EncodeData encode(String topic, T message) {
+        return new EncodeData(encode(message), null);
+    }
+
     /**
      * Returns whether this schema supports versioning.
      *
@@ -92,6 +96,10 @@ public interface Schema<T> extends Cloneable, AutoCloseable {
     }
 
     default void setSchemaInfoProvider(SchemaInfoProvider schemaInfoProvider) {
+    }
+
+    default SchemaInfoProvider getSchemaInfoProvider() {
+        return null;
     }
 
     /**
@@ -132,6 +140,14 @@ public interface Schema<T> extends Cloneable, AutoCloseable {
             return null;
         }
         return decode(getBytes(data));
+    }
+
+    default T decode(String topic, ByteBuffer data, byte[] schemaId) {
+        return decode(topic, getBytes(data), schemaId);
+    }
+
+    default T decode(String topic, byte[] data, byte[] schemaId) {
+        return decode(data, schemaId);
     }
 
     /**

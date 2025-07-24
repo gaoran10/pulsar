@@ -740,6 +740,9 @@ public class ProducerImpl<T> extends ProducerBase<T> implements TimerTask, Conne
                                          MessageId messageId) throws IOException {
         ByteBuf chunkPayload = compressedPayload;
         MessageMetadata msgMetadata = msg.getMessageBuilder();
+        if (msg.getSchemaId() != null) {
+            msgMetadata.setSchemaId(msg.getSchemaId());
+        }
         if (totalChunks > 1 && TopicName.get(topic).isPersistent()) {
             chunkPayload = compressedPayload.slice(readStartIndex,
                     Math.min(chunkMaxSizeInBytes, chunkPayload.readableBytes() - readStartIndex));
