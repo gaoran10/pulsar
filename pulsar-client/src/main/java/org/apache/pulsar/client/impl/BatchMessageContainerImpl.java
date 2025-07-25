@@ -157,9 +157,6 @@ class BatchMessageContainerImpl extends AbstractBatchMessageContainer {
             msg.getDataBuffer().markReaderIndex();
             try {
                 if (n == 1) {
-                    if (msg.getSchemaId() != null) {
-                        messageMetadata.setSchemaId(msg.getSchemaId());
-                    }
                     batchedMessageMetadataAndPayload.writeBytes(msg.getDataBuffer());
                 } else  {
                     batchedMessageMetadataAndPayload = Commands.serializeSingleMessageInBatchWithPayload(

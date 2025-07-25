@@ -140,7 +140,12 @@ public class KeyValueSchemaImpl<K, V> extends AbstractSchema<KeyValue<K, V>> imp
     @Override
     public EncodeData encode(String topic, KeyValue<K, V> message) {
         if (keyValueEncodingType != null && keyValueEncodingType == KeyValueEncodingType.INLINE) {
-            return KeyValue.encode(topic, message.getKey(), keySchema, message.getValue(), valueSchema);
+            return KeyValue.encode(
+                topic,
+                message.getKey(),
+                keySchema,
+                message.getValue(),
+                valueSchema);
         } else {
             if (message.getValue() == null) {
                 return null;
@@ -184,22 +189,6 @@ public class KeyValueSchemaImpl<K, V> extends AbstractSchema<KeyValue<K, V>> imp
 
     public KeyValue<K, V> decode(String topic, byte[] keyBytes, byte[] valueBytes,
                                  byte[] schemaVersion) {
-//        byte[] keySchemaId = null;
-//        byte[] valueSchemaId = null;
-//        if (schemaVersion != null) {
-//            ByteBuffer buffer = ByteBuffer.wrap(schemaVersion);
-//            int keySchemaIdLength = buffer.getInt();
-//            if (keySchemaIdLength >= 0) {
-//                keySchemaId = new byte[keySchemaIdLength];
-//                buffer.get(keySchemaId);
-//            }
-//            int valueSchemaIdLength = buffer.getInt();
-//            if (valueSchemaIdLength >= 0) {
-//                valueSchemaId = new byte[valueSchemaIdLength];
-//                buffer.get(valueSchemaId);
-//            }
-//        }
-
         K k;
         if (keyBytes == null) {
             k = null;

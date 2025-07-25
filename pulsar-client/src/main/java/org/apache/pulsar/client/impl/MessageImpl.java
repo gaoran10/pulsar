@@ -88,7 +88,7 @@ public class MessageImpl<T> implements Message<T> {
 
     // Constructor for out-going message
     public static <T> MessageImpl<T> create(MessageMetadata msgMetadata, ByteBuffer payload, Schema<T> schema,
-                                            String topic) {
+            String topic) {
         return create(msgMetadata, payload, schema, topic, null);
     }
 
